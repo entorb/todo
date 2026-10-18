@@ -1,0 +1,66 @@
+[project]
+name = "todo"
+version = "0.1.0"
+description = "Kanban todo boards: FastAPI + SQLModel backend"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "bcrypt~=5.0.0",
+    "fastapi~=0.143.0",
+    "pydantic-settings~=2.15.0",
+    "pyjwt~=2.15.1",
+    "sentry-sdk>=2.72.0",
+    "slowapi~=0.1.10",
+    "sqlmodel==0.0.48",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.0",
+    "uvicorn>=0.54.0",
+    "vulture>=2.16",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/gunicorn_conf.py"]
+# no relative_files: absolute <source> in coverage.xml lets SonarQube (run from
+# repo root on same runner path) resolve backend/app/...
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == \"__main__\":",
+    "if TYPE_CHECKING:",
+]
+
+[tool.pyright]
+include = ["app", "scripts", "tests"]
+
+[tool.vulture]
+ignore_decorators = [
+    "@app.get",
+    "@app.exception_handler",
+    "@router.get",
+    "@router.post",
+    "@router.patch",
+    "@router.put",
+    "@router.delete",
+]
+paths = ["app", "scripts"]
+exclude = ["app/gunicorn_conf.py"]
+ignore_names = [
+    "access_token",
+    "is_owner",
+    "last_login",
+    "members",
+    "model_config",
+    "request",
+    "token_type",
+]
