@@ -33,6 +33,7 @@ export const useBoardStore = defineStore("board", () => {
   const labels = ref<LabelPublic[]>([])
   const bulkMode = ref(false)
   const selected = ref(new Set<number>())
+  const hideCompleted = ref(false)
 
   const labelById = computed(() => new Map(labels.value.map((lb) => [lb.id, lb])))
 
@@ -103,8 +104,19 @@ export const useBoardStore = defineStore("board", () => {
     return await run(async () => createCard({ body: { column_id: columnId, title } }))
   }
 
-  async function patchCard(cardId: number, body: CardUpdate) {
-    return await run(async () => updateCard({ path: { card_id: cardId }, body }))
+  /** Patch card, apply server response locally (no board reload); reload only on error. */
+  async function patchCard(cardId: number, body: CardUpdate): Promise<boolean> {
+    try {
+      const { data } = await updateCard({ path: { card_id: cardId }, body })
+      const column = board.value?.columns.find((c) => c.id === data.column_id)
+      const idx = column?.cards.findIndex((c) => c.id === cardId) ?? -1
+      if (column != null && idx >= 0) column.cards[idx] = data
+      return true
+    } catch (err) {
+      Notify.create({ type: "warning", message: errorMessage(err) })
+      await refresh()
+      return false
+    }
   }
 
   async function removeCard(cardId: number) {
@@ -167,6 +179,7 @@ export const useBoardStore = defineStore("board", () => {
     labelById,
     bulkMode,
     selected,
+    hideCompleted,
     loadBoards,
     loadLabels,
     loadBoard,

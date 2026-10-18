@@ -37,8 +37,8 @@ const cardStyle = computed(() => {
     }
   }
   return {
-    background: isCompleted.value ? "#f5f5f5" : "#fff",
-    color: "#222",
+    background: isCompleted.value ? "var(--card-done-bg)" : "var(--card-bg)",
+    color: "var(--card-fg)",
     opacity: isCompleted.value ? 0.5 : 1,
   }
 })
@@ -55,6 +55,11 @@ function saveTitle() {
     return
   }
   void store.patchCard(props.card.id, { title: t })
+}
+
+function revertTitle(event: KeyboardEvent) {
+  title.value = props.card.title
+  ;(event.target as HTMLElement).blur()
 }
 
 function toggleCompleted(value: boolean) {
@@ -99,24 +104,30 @@ const prioOptions = computed(() =>
 <template>
   <div
     class="todo-card row items-center no-wrap"
+    :class="{ selected: isSelected }"
     :data-card-id="card.id"
     :style="cardStyle"
   >
+    <!-- bulk mode: whole card is the select toggle -->
+    <button
+      v-if="store.bulkMode"
+      type="button"
+      class="select-overlay"
+      :aria-pressed="isSelected"
+      aria-label="Select card"
+      @click="store.toggleSelected(card.id)"
+    />
     <q-icon
       name="drag_indicator"
       class="card-handle cursor-grab q-mr-xs"
       size="xs"
     />
-    <q-btn
+    <q-icon
       v-if="store.bulkMode"
-      type="button"
-      flat
-      round
-      dense
-      size="sm"
-      :icon="isSelected ? 'check_circle' : 'radio_button_unchecked'"
-      aria-label="Select card"
-      @click="store.toggleSelected(card.id)"
+      :name="isSelected ? 'check_circle' : 'radio_button_unchecked'"
+      size="xs"
+      class="q-mr-xs"
+      aria-hidden="true"
     />
     <q-checkbox
       :model-value="isCompleted"
@@ -136,115 +147,121 @@ const prioOptions = computed(() =>
       aria-label="Card title"
       @blur="saveTitle"
       @keydown.enter.prevent="($event.target as HTMLElement).blur()"
+      @keydown.esc="revertTitle"
     />
-    <q-btn
-      v-if="url"
-      type="a"
-      :href="url"
-      target="_blank"
-      rel="noopener noreferrer"
-      flat
-      round
-      dense
-      size="sm"
-      icon="open_in_new"
-      aria-label="Open link"
-    />
-    <q-btn
-      v-if="card.prio === true"
-      type="button"
-      flat
-      round
-      dense
-      size="sm"
-      icon="flag"
-      color="red"
-      aria-label="Mark not important"
-      @click="setPrio(false)"
-    />
-    <q-btn
-      v-if="card.is_repeat"
-      type="button"
-      flat
-      round
-      dense
-      size="sm"
-      icon="repeat"
-      aria-label="Unset repeat"
-      @click="setRepeat(false)"
-    />
-    <q-btn
-      v-if="store.labels.length > 0"
-      type="button"
-      flat
-      round
-      dense
-      size="sm"
-      icon="label"
-      aria-label="Set label"
-      @click="pickLabel"
-    />
-    <q-btn
-      type="button"
-      flat
-      round
-      dense
-      size="sm"
-      icon="more_vert"
-      aria-label="Card menu"
-    >
-      <q-menu auto-close>
-        <q-list dense>
-          <q-item
-            clickable
-            @click="setRepeat(!card.is_repeat)"
-          >
-            <q-item-section>{{ card.is_repeat ? "Unset Repeat" : "Set Repeat" }}</q-item-section>
-          </q-item>
-          <q-item
-            v-for="o in prioOptions"
-            :key="String(o.prio)"
-            clickable
-            @click="setPrio(o.prio)"
-          >
-            <q-item-section>{{ o.label }}</q-item-section>
-          </q-item>
-          <q-separator />
-          <q-item
-            clickable
-            @click="pickLabel"
-          >
-            <q-item-section>Set label…</q-item-section>
-          </q-item>
-          <q-separator />
-          <q-item
-            clickable
-            @click="moveOrCopy('move')"
-          >
-            <q-item-section>Move to…</q-item-section>
-          </q-item>
-          <q-item
-            clickable
-            @click="moveOrCopy('copy')"
-          >
-            <q-item-section>Copy to…</q-item-section>
-          </q-item>
-          <q-separator />
-          <q-item
-            clickable
-            class="text-negative"
-            @click="store.removeCard(card.id)"
-          >
-            <q-item-section>Delete</q-item-section>
-          </q-item>
-        </q-list>
-      </q-menu>
-    </q-btn>
+    <template v-if="!store.bulkMode">
+      <q-btn
+        v-if="url"
+        type="a"
+        :href="url"
+        target="_blank"
+        rel="noopener noreferrer"
+        flat
+        round
+        dense
+        size="sm"
+        icon="open_in_new"
+        aria-label="Open link"
+      />
+      <q-btn
+        v-if="card.prio === true"
+        type="button"
+        flat
+        round
+        dense
+        size="sm"
+        icon="flag"
+        color="red"
+        aria-label="Mark not important"
+        @click="setPrio(false)"
+      />
+      <q-btn
+        v-if="card.is_repeat"
+        type="button"
+        flat
+        round
+        dense
+        size="sm"
+        icon="repeat"
+        aria-label="Unset repeat"
+        @click="setRepeat(false)"
+      />
+      <q-btn
+        v-if="store.labels.length > 0"
+        type="button"
+        class="card-action"
+        flat
+        round
+        dense
+        size="sm"
+        icon="label"
+        aria-label="Set label"
+        @click="pickLabel"
+      />
+      <q-btn
+        type="button"
+        flat
+        round
+        dense
+        size="sm"
+        icon="more_vert"
+        class="card-action"
+        aria-label="Card menu"
+      >
+        <q-menu auto-close>
+          <q-list dense>
+            <q-item
+              clickable
+              @click="setRepeat(!card.is_repeat)"
+            >
+              <q-item-section>{{ card.is_repeat ? "Unset Repeat" : "Set Repeat" }}</q-item-section>
+            </q-item>
+            <q-item
+              v-for="o in prioOptions"
+              :key="String(o.prio)"
+              clickable
+              @click="setPrio(o.prio)"
+            >
+              <q-item-section>{{ o.label }}</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item
+              clickable
+              @click="pickLabel"
+            >
+              <q-item-section>Set label…</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item
+              clickable
+              @click="moveOrCopy('move')"
+            >
+              <q-item-section>Move to…</q-item-section>
+            </q-item>
+            <q-item
+              clickable
+              @click="moveOrCopy('copy')"
+            >
+              <q-item-section>Copy to…</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-item
+              clickable
+              class="text-negative"
+              @click="store.removeCard(card.id)"
+            >
+              <q-item-section>Delete</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </q-btn>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .todo-card {
+  position: relative;
   min-height: 30px;
   padding: 2px 8px;
   border-radius: 6px;
@@ -256,5 +273,27 @@ const prioOptions = computed(() =>
 }
 .card-title :deep(textarea) {
   font-size: 0.9rem;
+}
+.select-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.select-overlay:focus-visible {
+  outline: 2px dashed var(--selected-outline);
+}
+.selected {
+  outline: 2px solid var(--selected-outline);
+  outline-offset: 1px;
+}
+/* actions only on hover/focus for mouse devices, always visible on touch */
+@media (hover: hover) {
+  .todo-card:not(:hover, :focus-within) .card-action {
+    opacity: 0;
+  }
 }
 </style>

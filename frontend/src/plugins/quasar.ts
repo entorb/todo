@@ -11,6 +11,9 @@ import "quasar/dist/quasar.css"
 // Import icon libraries
 import "@quasar/extras/material-icons/material-icons.css"
 
+// user choice from dark mode toggle, else follow OS
+const savedDark = localStorage.getItem("dark")
+
 export default {
   plugins: {
     Notify,
@@ -19,6 +22,7 @@ export default {
   },
   iconSet,
   config: {
+    dark: savedDark == null ? ("auto" as const) : savedDark === "true",
     notify: {
       position: "top" as const,
       timeout: 2500,
