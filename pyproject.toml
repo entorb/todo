@@ -1,0 +1,8 @@
+[tool.uv]
+required-version = "~=0.13.4"
+exclude-newer = "7 days"
+# TODO: security fix PYSEC-2026-4320 (2026.10.19), drop once older than 7 days
+exclude-newer-package = { certifi = false }
+
+[tool.uv.workspace]
+members = ["backend"]
