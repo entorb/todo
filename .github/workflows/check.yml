@@ -1,0 +1,290 @@
+---
+name: Check Code
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * 0'  # Sunday 05:00 UTC, audit alert
+  push:
+    branches: [main, renovate/**]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+
+      # - name: Check commit message format
+      #   env:
+      #     SUBJECT: ${{ github.event.head_commit.message }}
+      #   run: |
+      #     SUBJECT="${SUBJECT%%$'\n'*}"
+      #     if ! echo "$SUBJECT" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore)(\([a-z0-9-]+\))?: .+|^docs$|^Update \S+$'; then
+      #       echo "::error::Invalid commit message: $SUBJECT"
+      #       exit 1
+      #     fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1  # latest only
+
+      # - name: Gitleaks
+      #   uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3.0.0
+      # - name: Gitleaks Cleanup
+      #   run: rm -rf results.sarif
+
+      - name: Run prek pre-commit
+        uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204  # v3.0.1
+        with:
+          extra-args: --all-files --quiet
+
+      - name: Run CSpell
+        uses: streetsidesoftware/cspell-action@6f3c77c1406bc930f944ba97e9801a22e42caf58  # v9.1.0
+        with:
+          files: '**/*'
+          incremental_files_only: false
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1  # latest only
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          version-file: pyproject.toml
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/pyproject.toml
+            uv.lock
+            pyproject.toml
+
+      - name: Prepare
+        working-directory: backend
+        run: uv sync --frozen --no-build
+
+      - name: Run py lint Ruff
+        working-directory: backend
+        run: |
+          uv run --frozen --no-build ruff format --check
+          uv run --frozen --no-build ruff check --no-fix --output-format=github
+
+      - name: Run py type check Pyright
+        working-directory: backend
+        run: uv run --frozen --no-build pyright
+
+      - name: Run py test Pytest
+        working-directory: backend
+        run: |
+          uv run --frozen --no-build pytest \
+            --cov \
+            --cov-report=xml:coverage.xml \
+            --quiet \
+            --tb=short
+
+      - name: Upload py coverage
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: coverage-py
+          path: backend/coverage.xml
+          retention-days: 1
+
+      - name: Run py dead code Vulture
+        working-directory: backend
+        run: uv run --frozen --no-build vulture
+
+      - name: Run py audit
+        working-directory: backend
+        run: uv audit --preview-features audit
+
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1  # latest only
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Prepare
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Package tsconfig deps for Sonar
+        working-directory: frontend
+        run: |
+          mkdir -p /tmp/sonar-tsconfig/@vue /tmp/sonar-tsconfig/@tsconfig
+          cp -RL node_modules/@vue/tsconfig /tmp/sonar-tsconfig/@vue/
+          cp -RL node_modules/@tsconfig/node24 /tmp/sonar-tsconfig/@tsconfig/
+
+      - name: Upload sonar tsconfig deps
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: tsconfig-deps
+          path: /tmp/sonar-tsconfig/
+          retention-days: 1
+
+      # - name: Setup Biome
+      #   uses: biomejs/setup-biome@v2
+      #   with:
+      #     version: latest
+
+      - name: Run js format Biome
+        working-directory: frontend
+        run: pnpm exec biome ci .
+
+      - name: Run js lint ESLint
+        working-directory: frontend
+        run: pnpm exec eslint .
+
+      - name: Run js test Vitest
+        working-directory: frontend
+        run: pnpm exec vitest --watch=false --coverage
+
+      - name: Upload js coverage
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: coverage-js
+          path: frontend/coverage/lcov.info
+          retention-days: 1
+
+      - name: Run js type check
+        working-directory: frontend
+        run: pnpm exec vue-tsc --build
+
+      - name: Run js dead code Knip
+        working-directory: frontend
+        run: pnpm knip
+
+      - name: Run js audit
+        working-directory: frontend
+        run: pnpm audit --prod
+
+  sonarqube:
+    needs: [core, python, node]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0  # Sonar wants full history for blame/new-code analysis
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: coverage-py
+          path: backend/
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: coverage-js
+          path: frontend/coverage/
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: tsconfig-deps
+          path: frontend/node_modules/
+
+      - uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9  # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  e2e-playwright:
+    needs: [core, python, node]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1  # latest only
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Prepare JS
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          version-file: pyproject.toml
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/pyproject.toml
+            uv.lock
+            pyproject.toml
+
+      - name: Prepare Python
+        working-directory: backend
+        run: uv sync --frozen --no-build
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: pnpm exec playwright install chromium
+
+      - name: Run Playwright
+        working-directory: frontend
+        run: pnpm pw:run
+
+  all-checks-passed:
+    if: always()
+    needs: [core, python, node, sonarqube, e2e-playwright]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]] || \
+             [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more required jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed."
