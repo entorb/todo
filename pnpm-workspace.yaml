@@ -1,0 +1,17 @@
+---
+packages:
+  - frontend
+
+minimumReleaseAge: 10080  # 7 days (in minutes)
+minimumReleaseAgeExclude:
+  - js-yaml@4.3.0 || 4.3.1
+
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: true
+  esbuild: true
+
+overrides:
+  js-yaml@>=4.0.0 <4.3.0: ^4.3.0
+  js-yaml@>=4.0.0 <4.3.1: ^4.3.1
+  glob@^11.1.0: '^13.0.6'
