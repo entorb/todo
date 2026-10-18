@@ -1,0 +1,169 @@
+#!/bin/sh
+set -e
+cd "$(dirname "$0")/.."
+
+echo "## Update Python, Node, UV, and PNPM [y/N]"
+read -r REPLY
+
+if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
+  brew update
+  echo "### UV Version"
+  brew upgrade uv
+  UV_VER=$(uv --version | awk '{print $2}')
+  # write required-version into [tool.uv] of pyproject.toml
+  # must NOT use `uv run` here — uv checks required-version before executing
+  python3 - "$UV_VER" <<'PY'
+import pathlib
+import re
+import sys
+
+version = sys.argv[1]
+path = pathlib.Path("pyproject.toml")
+text = path.read_text()
+text = re.sub(
+    r'(?ms)(^\[tool\.uv\]\n(?:.*\n)*?)required-version = "[^"]*"',
+    lambda m: m.group(1) + f'required-version = "{version}"',
+    text,
+)
+if "required-version" not in text:
+    text = text.replace(
+        "[tool.uv]\n", f'[tool.uv]\nrequired-version = "{version}"\n', 1
+    )
+path.write_text(text)
+PY
+  echo "uv pinned to $UV_VER"
+
+  echo "### Python Version"
+  # upgrade to latest available 3.11 patch, then pin the exact version
+  uv python upgrade 3.11
+  UV_PY_VER=$(
+    D=$(mktemp -d)
+    cd "$D" || exit 1
+    "$(uv python find --no-project --managed-python 3.11)" -c "import sys; print('%d.%d.%d' % sys.version_info[:3])"
+    rm -rf "$D"
+  )
+  [ -n "$UV_PY_VER" ] || {
+    echo "ERROR: could not resolve Python version" >&2
+    exit 1
+  }
+  printf '%s\n' "$UV_PY_VER" >.python-version
+  echo "python pinned to $UV_PY_VER"
+
+  echo "### Node and PNPM Versions"
+  brew upgrade node@24
+  # pnpm not from brew: self-update ignores the project cooldown, so pick the newest release
+  # that is >= 7 days old here; in a pinned project it only bumps packageManager
+  PNPM_COOLED=$(
+    python3 - <<'PNPMPY'
+import datetime as dt, json, urllib.request
+data = json.load(urllib.request.urlopen("https://registry.npmjs.org/pnpm", timeout=30))
+cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=7)
+cooled = [
+    v
+    for v, ts in data["time"].items()
+    if v[0].isdigit()
+    and "-" not in v
+    and dt.datetime.fromisoformat(ts.replace("Z", "+00:00")) <= cutoff
+]
+print(max(cooled, key=lambda v: tuple(int(n) for n in v.split("."))))
+PNPMPY
+  )
+  [ -n "$PNPM_COOLED" ] || {
+    echo "ERROR: could not resolve pnpm version" >&2
+    exit 1
+  }
+  # run outside the repo, inside a pinned project self-update only bumps packageManager
+  (cd / && pnpm self-update "$PNPM_COOLED")
+
+  # update package.json and .nvmrc with new versions
+  NODE_VER=$(node --version | sed 's/v//')
+  # query outside of the repo, inside pnpm reports the version pinned in package.json
+  PNPM_VER=$(cd / && pnpm --version)
+  PNPM_MANAGER="pnpm@$PNPM_VER"
+  printf '%s\n' "${NODE_VER%%.*}" >.nvmrc
+  node -e "
+    const pkg = JSON.parse(require('fs').readFileSync('package.json','utf8'));
+    pkg.packageManager = '$PNPM_MANAGER';
+    pkg.engines ??= {};
+    pkg.engines.node = '>=${NODE_VER%%.*}';
+    pkg.engines.pnpm = '>=$PNPM_VER';
+    require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+  "
+fi
+
+echo "## Python Packages"
+cd backend
+# extract versions from pyproject.toml
+GEN_OUT=$(uv run python scripts/gen_py_packages_update.py)
+DEP_REM=$(printf '%s\n' "$GEN_OUT" | sed -n 1p)
+DEP_ADD=$(printf '%s\n' "$GEN_OUT" | sed -n 2p)
+DEV_REM=$(printf '%s\n' "$GEN_OUT" | sed -n 3p)
+DEV_ADD=$(printf '%s\n' "$GEN_OUT" | sed -n 4p)
+
+# Disables pathname expansion.
+set -f
+
+# remove unpinned
+# word splitting of the space-separated package lists is intended (globbing off via set -f)
+# shellcheck disable=SC2086
+[ -n "$DEP_REM" ] && uv remove $DEP_REM
+# shellcheck disable=SC2086
+[ -n "$DEV_REM" ] && uv remove --dev $DEV_REM
+
+uv sync --no-build --upgrade
+
+# Re-add at latest versions
+# shellcheck disable=SC2086
+[ -n "$DEP_ADD" ] && uv add $DEP_ADD
+# shellcheck disable=SC2086
+[ -n "$DEV_ADD" ] && uv add --dev $DEV_ADD
+# Restore pathname expansion.
+set +f
+cd ..
+
+./scripts/chk_py_lint.sh
+
+echo "## Node"
+echo "### delete old node_modules and lock"
+rm -rf node_modules frontend/node_modules
+rm -f pnpm-lock.yaml
+
+echo "### Node packages"
+pnpm install --ignore-scripts
+pnpm up --recursive --latest
+# run from repo root: from frontend/, migrate treats biome.json as nested and prepends "root": false
+frontend/node_modules/.bin/biome migrate --write
+# npm i baseline-browser-mapping@latest -D
+# npx update-browserslist-db@latest
+
+echo "### Node package audit"
+./scripts/chk_js_package_audit.sh
+
+echo "### Gen API code"
+./scripts/gen_api_for_vue.sh
+
+echo "## Code checks"
+echo "### Prek autoupdate"
+prek update --cooldown-days 7
+
+echo "### run_checks.sh"
+./scripts/run_checks.sh
+
+echo "### run_e2e.sh"
+./scripts/run_e2e.sh
+
+echo "## Git"
+if [ -n "$(git status --porcelain)" ]; then
+  echo "### git push"
+  git add pnpm-lock.yaml uv.lock
+  git diff --staged --quiet || git commit -m "chore(deps): Lock" -- pnpm-lock.yaml uv.lock
+
+  FILES="package.json frontend/package.json pyproject.toml backend/pyproject.toml uv.lock pnpm-workspace.yaml biome.json .pre-commit-config.yaml .nvmrc .python-version frontend/src/client"
+  # shellcheck disable=SC2086
+  git add $FILES
+  # shellcheck disable=SC2086
+  git diff --staged --quiet || git commit -m "chore(deps): Package update" -- $FILES
+  git push
+fi
+
+echo "update DONE, not yet deployed"
