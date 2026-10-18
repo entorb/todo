@@ -15,6 +15,7 @@ const name = ref(props.label?.name ?? "")
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss -- initial form value
 const color = ref(props.label?.color ?? "#cccccc")
 const error = ref<string | null>(null)
+const HEX_COLOR = /^#([\da-f]{3}){1,2}$/
 
 async function save() {
   const n = name.value.trim()
@@ -22,7 +23,11 @@ async function save() {
     error.value = "Label name is required"
     return
   }
-  const c = color.value.toLowerCase().startsWith("#") ? color.value.toLowerCase() : "#cccccc"
+  const c = color.value.trim().toLowerCase()
+  if (!HEX_COLOR.test(c)) {
+    error.value = "Color must be hex, e.g. #ff8800"
+    return
+  }
   const body = { name: n, color: c }
   try {
     await (props.label == null
@@ -64,6 +69,7 @@ async function save() {
                   <q-color
                     v-model="color"
                     format-model="hex"
+                    default-view="palette"
                     no-header-tabs
                   />
                 </q-popup-proxy>
@@ -76,22 +82,21 @@ async function save() {
           >
             {{ error }}
           </div>
+          <div class="row justify-end q-gutter-sm q-mt-md">
+            <q-btn
+              type="button"
+              flat
+              label="Cancel"
+              @click="onDialogCancel"
+            />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Save"
+            />
+          </div>
         </q-form>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          type="button"
-          flat
-          label="Cancel"
-          @click="onDialogCancel"
-        />
-        <q-btn
-          type="button"
-          color="primary"
-          label="Save"
-          @click="save"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>

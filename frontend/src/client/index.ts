@@ -27,7 +27,7 @@ export {
   updateCard,
   updateColumn,
   updateLabel,
-} from "./sdk.gen.js"
+} from "./sdk.gen"
 export type {
   BoardCreate,
   BoardPublic,
@@ -171,4 +171,4 @@ export type {
   UpdateLabelResponse,
   UpdateLabelResponses,
   ValidationError,
-} from "./types.gen.js"
+} from "./types.gen"

@@ -25,7 +25,13 @@ const cards = computed({
   get: () => props.column.cards,
   set: (value: CardPublic[]) => store.setCards(props.column.id, value),
 })
+const openCount = computed(() => cards.value.filter((c) => c.date_completed == null).length)
 const addInput = ref<{ focus: () => void } | null>(null)
+
+function revertName(event: KeyboardEvent) {
+  name.value = props.column.name
+  ;(event.target as HTMLElement).blur()
+}
 
 function saveName() {
   const n = name.value.trim()
@@ -76,13 +82,24 @@ function onCardDrop(event: DraggableEvent) {
       />
       <q-input
         v-model="name"
-        class="col text-weight-bold"
+        class="col"
+        input-class="text-weight-bold text-subtitle1"
         borderless
         dense
         aria-label="Column name"
         @blur="saveName"
         @keydown.enter.prevent="($event.target as HTMLElement).blur()"
+        @keydown.esc="revertName"
       />
+      <q-badge
+        rounded
+        color="blue-grey-3"
+        text-color="blue-grey-10"
+        class="q-mr-xs"
+        :label="`${openCount}/${cards.length}`"
+      >
+        <q-tooltip>open / total</q-tooltip>
+      </q-badge>
       <q-btn
         type="button"
         flat
@@ -107,6 +124,7 @@ function onCardDrop(event: DraggableEvent) {
     >
       <TodoCard
         v-for="card in cards"
+        v-show="!(store.hideCompleted && card.date_completed != null)"
         :key="card.id"
         :card="card"
         :column-name="column.name"
@@ -121,7 +139,23 @@ function onCardDrop(event: DraggableEvent) {
       placeholder="+ Add a card…"
       aria-label="Add a card"
       @keydown.enter.prevent="addCard"
-    />
+    >
+      <template
+        v-if="newTitle.trim() !== ''"
+        #append
+      >
+        <q-btn
+          type="button"
+          flat
+          round
+          dense
+          size="sm"
+          icon="send"
+          aria-label="Add card"
+          @click="addCard"
+        />
+      </template>
+    </q-input>
   </div>
 </template>
 
@@ -130,7 +164,8 @@ function onCardDrop(event: DraggableEvent) {
   width: 300px;
   min-width: 280px;
   max-width: 320px;
-  background: #eceff1;
+  max-height: 100%;
+  background: var(--column-bg);
   border-radius: 10px;
   padding: 12px;
   gap: 3px;
@@ -139,20 +174,33 @@ function onCardDrop(event: DraggableEvent) {
 .card-list {
   gap: 3px;
   min-height: 20px;
+  overflow-y: auto;
+  flex: 0 1 auto;
+  padding: 3px; /* room for shadow / selection outline */
 }
 .add-card {
-  background: rgb(255 255 255 / 50%);
+  flex-shrink: 0;
+  background: var(--add-card-bg);
   border-radius: 6px;
   padding: 0 8px;
 }
+/* overlay instead of background: TodoCard sets background inline */
 :deep(.card-ghost) {
   opacity: 0.4;
-  background: #cfd8dc !important;
+}
+:deep(.card-ghost)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--ghost-bg);
+  border-radius: inherit;
 }
 @media (max-width: 600px) {
   .board-column {
     width: 100%;
     max-width: 100%;
+    max-height: none;
   }
 }
 </style>

@@ -67,22 +67,21 @@ async function save() {
           >
             {{ error }}
           </div>
+          <div class="row justify-end q-gutter-sm q-mt-md">
+            <q-btn
+              type="button"
+              flat
+              label="Cancel"
+              @click="onDialogCancel"
+            />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Save"
+            />
+          </div>
         </q-form>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          type="button"
-          flat
-          label="Cancel"
-          @click="onDialogCancel"
-        />
-        <q-btn
-          type="button"
-          color="primary"
-          label="Save"
-          @click="save"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQuasar } from "quasar"
-import { computed, watch } from "vue"
+import { computed, onUnmounted, watch } from "vue"
 import { VueDraggable } from "vue-draggable-plus"
 import { useRouter } from "vue-router"
 
@@ -37,6 +37,16 @@ async function load(key: string) {
 }
 
 watch(() => props.boardKey, load, { immediate: true })
+watch(
+  () => store.board?.name,
+  (name) => {
+    document.title = name ?? "Todo"
+  },
+  { immediate: true },
+)
+onUnmounted(() => {
+  document.title = "Todo"
+})
 
 const columns = computed({
   get: () => store.board?.columns ?? [],
@@ -94,6 +104,28 @@ function openDialog(component: typeof ExportDialog | typeof DeleteCardsDialog) {
   $q.dialog({ component, componentProps: { boardId: store.board.id } })
 }
 
+const darkLabel = computed(() => ($q.dark.isActive ? "Light mode" : "Dark mode"))
+
+function toggleDark() {
+  $q.dark.toggle()
+  localStorage.setItem("dark", String($q.dark.isActive))
+}
+
+const hideLabel = computed(() => (store.hideCompleted ? "Show completed" : "Hide completed"))
+
+// toolbar buttons on desktop, menu items on phones
+const toolbarActions = [
+  { label: "Sort by prio, label, title", icon: "swap_vert", run: () => store.sortCards("prio") },
+  { label: "Sort by date", icon: "calendar_month", run: () => store.sortCards("date") },
+  {
+    label: "Add column",
+    icon: "view_column",
+    run: () => store.board != null && store.addColumn(store.board.id),
+  },
+  { label: "Export", icon: "download", run: () => openDialog(ExportDialog) },
+  { label: "Sync from server", icon: "sync", run: () => store.refresh() },
+]
+
 function manageLabels() {
   $q.dialog({ component: ManageLabelsDialog }).onDismiss(() => store.refresh())
 }
@@ -136,6 +168,8 @@ async function logout() {
             flat
             round
             icon="checklist"
+            :color="store.bulkMode ? 'amber' : undefined"
+            :aria-pressed="store.bulkMode"
             aria-label="Bulk edit"
             @click="store.toggleBulk()"
           >
@@ -145,51 +179,34 @@ async function logout() {
             type="button"
             flat
             round
-            icon="swap_vert"
-            aria-label="Sort by prio, label, title"
-            @click="store.sortCards('prio')"
+            :icon="store.hideCompleted ? 'visibility' : 'visibility_off'"
+            :aria-label="hideLabel"
+            @click="store.hideCompleted = !store.hideCompleted"
           >
-            <q-tooltip>Sort by prio, label, title</q-tooltip>
+            <q-tooltip>{{ hideLabel }}</q-tooltip>
           </q-btn>
           <q-btn
             type="button"
             flat
             round
-            icon="calendar_month"
-            aria-label="Sort by date"
-            @click="store.sortCards('date')"
+            :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
+            :aria-label="darkLabel"
+            @click="toggleDark"
           >
-            <q-tooltip>Sort by date</q-tooltip>
+            <q-tooltip>{{ darkLabel }}</q-tooltip>
           </q-btn>
           <q-btn
+            v-for="a in toolbarActions"
+            :key="a.label"
             type="button"
             flat
             round
-            icon="view_column"
-            aria-label="Add column"
-            @click="store.addColumn(store.board.id)"
+            class="gt-xs"
+            :icon="a.icon"
+            :aria-label="a.label"
+            @click="a.run"
           >
-            <q-tooltip>Add column</q-tooltip>
-          </q-btn>
-          <q-btn
-            type="button"
-            flat
-            round
-            icon="download"
-            aria-label="Export"
-            @click="openDialog(ExportDialog)"
-          >
-            <q-tooltip>Export</q-tooltip>
-          </q-btn>
-          <q-btn
-            type="button"
-            flat
-            round
-            icon="sync"
-            aria-label="Sync from server"
-            @click="store.refresh()"
-          >
-            <q-tooltip>Sync from server</q-tooltip>
+            <q-tooltip>{{ a.label }}</q-tooltip>
           </q-btn>
           <q-btn
             type="button"
@@ -200,6 +217,16 @@ async function logout() {
           >
             <q-menu auto-close>
               <q-list dense>
+                <q-item
+                  v-for="a in toolbarActions"
+                  :key="a.label"
+                  clickable
+                  class="xs"
+                  @click="a.run"
+                >
+                  <q-item-section>{{ a.label }}</q-item-section>
+                </q-item>
+                <q-separator class="xs" />
                 <q-item
                   clickable
                   @click="openBoardDialog(true)"
@@ -254,9 +281,26 @@ async function logout() {
 
       <BulkBar v-if="store.bulkMode" />
 
+      <div
+        v-if="columns.length === 0"
+        class="column items-center q-pa-xl text-white"
+      >
+        <div class="text-h6 q-mb-md">
+          This board has no columns yet
+        </div>
+        <q-btn
+          type="button"
+          color="white"
+          text-color="primary"
+          icon="view_column"
+          label="Add first column"
+          @click="store.addColumn(store.board.id)"
+        />
+      </div>
       <VueDraggable
+        v-else
         v-model="columns"
-        class="columns-row row no-wrap q-gutter-md"
+        class="columns-row row no-wrap"
         handle=".column-handle"
         :animation="150"
         @end="onColumnDrop"
@@ -268,16 +312,31 @@ async function logout() {
         />
       </VueDraggable>
     </template>
+    <div
+      v-else
+      class="flex flex-center full-height"
+    >
+      <q-spinner
+        color="white"
+        size="3em"
+      />
+    </div>
   </q-page>
 </template>
 
 <style scoped>
+/* page fills viewport, columns scroll individually */
 .board-page {
   padding: 16px 24px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 .columns-row {
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
   overflow-x: auto;
-  min-height: 400px;
   align-items: flex-start;
 }
 .board-switcher :deep(.q-field__native) {
@@ -287,10 +346,12 @@ async function logout() {
 @media (max-width: 600px) {
   .board-page {
     padding: 8px;
+    height: auto;
   }
   .columns-row {
     flex-direction: column;
     flex-wrap: nowrap;
+    overflow-x: visible;
   }
 }
 </style>

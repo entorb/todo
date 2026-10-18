@@ -17,9 +17,16 @@ function edit(label?: LabelPublic) {
   )
 }
 
-async function remove(label: LabelPublic) {
-  await store.run(() => deleteLabel({ path: { label_id: label.id } }))
-  await store.loadLabels()
+function remove(label: LabelPublic) {
+  $q.dialog({
+    title: "Delete label",
+    message: `Delete label '${label.name}'? It is removed from all cards on all boards.`,
+    cancel: true,
+    ok: { color: "negative", label: "Delete" },
+  }).onOk(async () => {
+    await store.run(() => deleteLabel({ path: { label_id: label.id } }))
+    await store.loadLabels()
+  })
 }
 </script>
 

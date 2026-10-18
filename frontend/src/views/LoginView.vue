@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import { useAuthStore } from "@/stores/auth.ts"
@@ -8,6 +8,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const username = ref("") // dummy field, added for password manager compatibility
 const secret = ref("")
+const secretInput = ref<{ focus: () => void } | null>(null)
+onMounted(() => secretInput.value?.focus())
 
 async function handleLogin() {
   try {
@@ -58,6 +60,7 @@ async function handleLogin() {
             />
 
             <q-input
+              ref="secretInput"
               v-model="secret"
               label="Secret"
               type="password"

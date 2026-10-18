@@ -23,17 +23,24 @@ describe("board store", () => {
     vi.mocked(getBoard).mockResolvedValue({ data: BOARD } as never)
   })
 
-  it("mutation reloads board, error returns false", async () => {
+  it("patch applies response locally, error reloads board and returns false", async () => {
+    const card = { id: 5, column_id: 7, title: "t", prio: null }
+    vi.mocked(getBoard).mockResolvedValue({
+      data: { ...BOARD, columns: [{ id: 7, name: "c", cards: [card] }] },
+    } as never)
     const store = useBoardStore()
     await store.loadBoard("b")
     vi.mocked(getBoard).mockClear()
 
+    vi.mocked(updateCard).mockResolvedValue({ data: { ...card, prio: true } } as never)
     expect(await store.patchCard(5, { prio: true })).toBe(true)
     expect(updateCard).toHaveBeenCalledWith({ path: { card_id: 5 }, body: { prio: true } })
-    expect(getBoard).toHaveBeenCalledTimes(1)
+    expect(store.board?.columns[0]?.cards[0]?.prio).toBe(true)
+    expect(getBoard).not.toHaveBeenCalled()
 
     vi.mocked(updateCard).mockRejectedValue(new Error("Not found"))
     expect(await store.patchCard(5, { prio: true })).toBe(false)
+    expect(getBoard).toHaveBeenCalledTimes(1)
   })
 
   it("bulk update sends selection and exits bulk mode", async () => {
