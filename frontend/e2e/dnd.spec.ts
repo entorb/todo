@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test"
 
-import { login } from "./helpers.ts"
+import { addColumn, login } from "./helpers.ts"
 
 /** Mouse drag in small steps, SortableJS needs real move events. */
 async function drag(page: Page, from: Locator, to: Locator) {
@@ -20,8 +20,8 @@ test("drag card to other column persists", async ({ page }) => {
   await page.getByRole("button", { name: "Save" }).click()
   await expect(page).toHaveURL(/b\/dnd$/)
 
-  await page.getByRole("button", { name: "Add column" }).click()
-  await page.getByRole("button", { name: "Add column" }).click()
+  await addColumn(page)
+  await addColumn(page)
   const columns = page.locator(".board-column")
   await expect(columns).toHaveCount(2)
   const add = columns.first().getByLabel("Add a card")

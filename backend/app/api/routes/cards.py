@@ -17,7 +17,7 @@ def _check_label(session: SessionDep, data: dict) -> None:
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_card(data: CardCreate, session: SessionDep, user: CurrentUser) -> CardPublic:
     """Create a card at the end of a column."""
-    crud.get_column(session, user.user_id, data.column_id)
+    crud.get_column(session, user.user_id, data.column_id, owner_only=False)
     card = crud.create_card(session, data.column_id, data.title)
     return CardPublic.model_validate(card, from_attributes=True)
 
@@ -27,7 +27,7 @@ def create_card(data: CardCreate, session: SessionDep, user: CurrentUser) -> Car
 def bulk_update_cards(
     data: CardBulkUpdate, session: SessionDep, user: CurrentUser
 ) -> Response:
-    """Set repeat / prio / label on many cards. Explicit null unsets prio/label."""
+    """Set revive / prio / label on many cards. Explicit null unsets prio/label."""
     crud.check_cards_owned(session, user.user_id, data.ids)
     values = data.model_dump(exclude_unset=True, exclude={"ids"})
     _check_label(session, values)
@@ -53,7 +53,7 @@ def move_card(
 ) -> CardPublic:
     """Move a card to column/position (default: end)."""
     card = crud.get_card(session, user.user_id, card_id)
-    crud.get_column(session, user.user_id, data.column_id)
+    crud.get_column(session, user.user_id, data.column_id, owner_only=False)
     card = crud.move_card(session, card, data.column_id, data.position)
     return CardPublic.model_validate(card, from_attributes=True)
 
@@ -64,7 +64,7 @@ def copy_card(
 ) -> CardPublic:
     """Copy a card to the end of a column."""
     card = crud.get_card(session, user.user_id, card_id)
-    crud.get_column(session, user.user_id, data.column_id)
+    crud.get_column(session, user.user_id, data.column_id, owner_only=False)
     new_card = crud.copy_card(session, card, data.column_id)
     return CardPublic.model_validate(new_card, from_attributes=True)
 

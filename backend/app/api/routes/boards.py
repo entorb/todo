@@ -25,9 +25,9 @@ DeleteMode = Literal["completed", "all", "2w"]
 
 @router.get("")
 def list_boards(session: SessionDep, user: CurrentUser) -> list[BoardSummary]:
-    """List own boards incl. column names."""
+    """List own and shared boards incl. column names."""
     boards = crud.get_boards_with_columns(session, user.user_id)
-    return [BoardSummary.model_validate(b, from_attributes=True) for b in boards]
+    return [_summary(b, user.user_id) for b in boards]
 
 
 @router.get("/{key}")
@@ -38,7 +38,7 @@ def get_board(
     board = crud.get_board_by_key(session, user.user_id, key)
     if touch:
         crud.touch_last_login(session, board)
-    return _public(board)
+    return _public(board, user.user_id)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -125,5 +125,13 @@ def delete_cards(
     return CountResponse(count=crud.delete_cards(session, board_id, mode))
 
 
-def _public(board: Board) -> BoardPublic:
-    return BoardPublic.model_validate(board, from_attributes=True)
+def _public(board: Board, user_id: int) -> BoardPublic:
+    return BoardPublic.model_validate(
+        board, from_attributes=True, update={"is_owner": board.owner_id == user_id}
+    )
+
+
+def _summary(board: Board, user_id: int) -> BoardSummary:
+    return BoardSummary.model_validate(
+        board, from_attributes=True, update={"is_owner": board.owner_id == user_id}
+    )

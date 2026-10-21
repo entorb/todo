@@ -8,6 +8,7 @@ so Board.columns and Column.cards load and delete automatically.
 from datetime import UTC, datetime
 
 from pydantic import NaiveDatetime
+from sqlalchemy import Index, func, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -42,7 +43,7 @@ class Card(SQLModel, table=True):
     # alone is then non-deterministic. Upgrade path: deferrable unique constraint
     # + batch position assignment (single UPDATE ... CASE).
     position: int = Field(default=0, nullable=False)
-    is_repeat: bool = Field(
+    is_revive: bool = Field(
         default=False,
         nullable=False,
         sa_column_kwargs={"server_default": "0"},
@@ -82,6 +83,10 @@ class User(SQLModel, table=True):
     """A user owning boards."""
 
     __tablename__ = "user"  # type: ignore[assignment]
+    # user names are unique case-insensitively (board member lookup by name)
+    __table_args__ = (
+        Index("ux_user_name_lower", func.lower(text("name")), unique=True),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(nullable=False)
@@ -103,6 +108,18 @@ class Board(SQLModel, table=True):
     columns: list[Column] = Relationship(
         cascade_delete=True,
         sa_relationship_kwargs={"order_by": "Column.position"},
+    )
+    members: list["BoardMember"] = Relationship(cascade_delete=True)
+
+
+class BoardMember(SQLModel, table=True):
+    """User with card access (no board/column management) to a board."""
+
+    __tablename__ = "board_member"  # type: ignore[assignment]
+
+    board_id: int = Field(foreign_key="board.id", ondelete="CASCADE", primary_key=True)
+    user_id: int = Field(
+        foreign_key="user.id", ondelete="CASCADE", primary_key=True, index=True
     )
 
 
@@ -151,7 +168,7 @@ class CardPublic(SQLModel):
     column_id: int
     title: str
     position: int
-    is_repeat: bool
+    is_revive: bool
     label_id: int | None
     prio: bool | None
     date_created: NaiveDatetime
@@ -181,6 +198,7 @@ class BoardSummary(SQLModel):
     id: int
     key: str
     name: str
+    is_owner: bool = True
     columns: list[ColumnSummary]
 
 
@@ -191,6 +209,7 @@ class BoardPublic(SQLModel):
     key: str
     name: str
     last_login: NaiveDatetime | None
+    is_owner: bool = True
     columns: list[ColumnPublic]
 
 
@@ -238,7 +257,7 @@ class CardUpdate(SQLModel):
 
     title: str | None = Field(default=None, min_length=1)
     is_completed: bool | None = None
-    is_repeat: bool | None = None
+    is_revive: bool | None = None
     prio: bool | None = None
     label_id: int | None = None
 
@@ -247,7 +266,7 @@ class CardBulkUpdate(SQLModel):
     """Same update for many cards. Explicit null for prio/label_id unsets them."""
 
     ids: list[int] = Field(min_length=1)
-    is_repeat: bool | None = None
+    is_revive: bool | None = None
     prio: bool | None = None
     label_id: int | None = None
 
