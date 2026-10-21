@@ -1,21 +1,22 @@
 """
-DB access layer, ported from nice-todo database.py.
+DB access layer.
 
 All text inputs are stripped of white spaces prior to insert/update.
-Every lookup is scoped to the owner, foreign data raises NotFoundError.
+Every lookup is scoped to the owner or board members, foreign data raises
+NotFoundError. Board and column management is owner-only, cards are member-allowed.
 """
 
 import re
 from collections.abc import Callable
 from datetime import timedelta
 
-from sqlalchemy import case
+from sqlalchemy import ColumnElement, case, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload  # type: ignore[attr-defined]
 from sqlmodel import Session, SQLModel, col, delete, select, update
 
 from app.core.db import get_engine
-from app.models import Board, Card, Column, Label, User, utcnow
+from app.models import Board, BoardMember, Card, Column, Label, User, utcnow
 from app.sort import card_sort_by_date, card_sort_by_prio_label_name
 
 _KEY_PATTERN = re.compile(r"^[a-zA-Z0-9._~-]+$")
@@ -63,21 +64,6 @@ def _migrate() -> None:
             s.add(User(id=1, name="Torben"))
             s.commit()
 
-    # legacy nice-todo DB without board.owner_id
-    # ponytail: SQLite rejects ADD COLUMN with REFERENCES + non-NULL default
-    # while foreign_keys=ON, so legacy DBs get a nullable owner_id.
-    # Upgrade path: table rebuild.
-    with engine.begin() as conn:
-        cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(board)")}
-        if "owner_id" not in cols:
-            conn.exec_driver_sql(
-                "ALTER TABLE board ADD COLUMN owner_id INTEGER REFERENCES user(id)"
-            )
-            conn.exec_driver_sql("UPDATE board SET owner_id = 1")
-            conn.exec_driver_sql(
-                "CREATE INDEX IF NOT EXISTS ix_board_owner_id ON board(owner_id)"
-            )
-
 
 # Users
 
@@ -100,24 +86,47 @@ def get_user_by_secret(
     return found
 
 
+def get_user_by_name(s: Session, name: str) -> User | None:
+    """Return the user with this name (case-insensitive)."""
+    return s.exec(
+        select(User).where(func.lower(User.name) == name.strip().lower())
+    ).first()
+
+
 # Ownership lookups
 
 
-def get_board(s: Session, owner_id: int, board_id: int) -> Board:
-    """Return owned board or raise NotFoundError."""
+def _board_access(user_id: int) -> ColumnElement[bool]:
+    """Condition: user owns the board or is a member (no join, no duplicates)."""
+    return or_(
+        col(Board.owner_id) == user_id,
+        col(Board.id).in_(
+            select(BoardMember.board_id).where(BoardMember.user_id == user_id)
+        ),
+    )
+
+
+def get_board(
+    s: Session, owner_id: int, board_id: int, *, owner_only: bool = True
+) -> Board:
+    """Return board, owner-only unless told otherwise, or raise NotFoundError."""
     board = s.get(Board, board_id)
-    if board is None or board.owner_id != owner_id:
+    if board is None:
+        raise NotFoundError
+    if board.owner_id != owner_id and (
+        owner_only or s.get(BoardMember, (board_id, owner_id)) is None
+    ):
         raise NotFoundError
     return board
 
 
 def get_board_by_key(s: Session, owner_id: int, key: str) -> Board:
-    """Load owned board with columns and cards eagerly loaded."""
+    """Load accessible board with columns and cards eagerly loaded."""
     # ponytail: selectinload fetches every card on every page load; fine for
     # personal boards. Upgrade path: per-column lazy load or pagination.
     board = s.exec(
         select(Board)
-        .where(Board.key == key, Board.owner_id == owner_id)
+        .where(Board.key == key, _board_access(owner_id))
         .options(selectinload(Board.columns).selectinload(Column.cards))  # type: ignore[arg-type]
     ).first()
     if board is None:
@@ -125,12 +134,13 @@ def get_board_by_key(s: Session, owner_id: int, key: str) -> Board:
     return board
 
 
-def get_column(s: Session, owner_id: int, column_id: int) -> Column:
-    """Return owned column or raise NotFoundError."""
+def get_column(
+    s: Session, owner_id: int, column_id: int, *, owner_only: bool = True
+) -> Column:
+    """Return column, owner-only unless told otherwise, or raise NotFoundError."""
+    access = col(Board.owner_id) == owner_id if owner_only else _board_access(owner_id)
     column = s.exec(
-        select(Column)
-        .join(Board)
-        .where(Column.id == column_id, Board.owner_id == owner_id)
+        select(Column).join(Board).where(Column.id == column_id, access)
     ).first()
     if column is None:
         raise NotFoundError
@@ -138,12 +148,12 @@ def get_column(s: Session, owner_id: int, column_id: int) -> Column:
 
 
 def get_card(s: Session, owner_id: int, card_id: int) -> Card:
-    """Return owned card or raise NotFoundError."""
+    """Return card on an accessible board or raise NotFoundError."""
     card = s.exec(
         select(Card)
         .join(Column)
         .join(Board)
-        .where(Card.id == card_id, Board.owner_id == owner_id)
+        .where(Card.id == card_id, _board_access(owner_id))
     ).first()
     if card is None:
         raise NotFoundError
@@ -151,12 +161,12 @@ def get_card(s: Session, owner_id: int, card_id: int) -> Card:
 
 
 def check_cards_owned(s: Session, owner_id: int, card_ids: list[int]) -> None:
-    """Raise NotFoundError unless all cards belong to the owner."""
+    """Raise NotFoundError unless all cards are on accessible boards."""
     owned = s.exec(
         select(Card.id)
         .join(Column)
         .join(Board)
-        .where(col(Card.id).in_(card_ids), Board.owner_id == owner_id)
+        .where(col(Card.id).in_(card_ids), _board_access(owner_id))
     ).all()
     if set(owned) != set(card_ids):
         raise NotFoundError
@@ -173,11 +183,11 @@ def touch_last_login(s: Session, board: Board) -> None:
 
 
 def get_boards_with_columns(s: Session, owner_id: int) -> list[Board]:
-    """Return owned boards with columns eagerly loaded (no cards)."""
+    """Return accessible boards (owned or member) with columns, no cards."""
     return list(
         s.exec(
             select(Board)
-            .where(Board.owner_id == owner_id)
+            .where(_board_access(owner_id))
             .options(selectinload(Board.columns))  # type: ignore[arg-type]
             .order_by(Board.name)
         ).all()
@@ -213,6 +223,15 @@ def add_board(s: Session, owner_id: int, key: str, name: str) -> Board:
         raise ConflictError(msg) from e
     s.refresh(board)
     return board
+
+
+def add_board_member(s: Session, board: Board, user_id: int) -> None:
+    """Grant a user card access to the board (idempotent)."""
+    board_id = board.id
+    assert board_id is not None
+    if s.get(BoardMember, (board_id, user_id)) is None:
+        s.add(BoardMember(board_id=board_id, user_id=user_id))
+        s.commit()
 
 
 def update_board(s: Session, board: Board, name: str | None, key: str | None) -> Board:
@@ -326,8 +345,8 @@ def update_card(s: Session, card: Card, data: dict) -> Card:
             card.title = title
     if "is_completed" in data and data["is_completed"] is not None:
         card.date_completed = utcnow() if data["is_completed"] else None
-    if "is_repeat" in data and data["is_repeat"] is not None:
-        card.is_repeat = data["is_repeat"]
+    if "is_revive" in data and data["is_revive"] is not None:
+        card.is_revive = data["is_revive"]
     if "prio" in data:
         card.prio = data["prio"]
     if "label_id" in data:
@@ -372,7 +391,7 @@ def copy_card(s: Session, card: Card, target_column_id: int) -> Card:
         title=card.title,
         position=len(_get_cards(s, target_column_id)),
         label_id=card.label_id,
-        is_repeat=card.is_repeat,
+        is_revive=card.is_revive,
         prio=card.prio,
     )
     s.add(new_card)
@@ -388,10 +407,10 @@ def delete_card(s: Session, card: Card) -> None:
 
 
 def bulk_update_cards(s: Session, card_ids: list[int], data: dict) -> None:
-    """Set is_repeat / prio / label_id on many cards with one UPDATE."""
-    values = {k: v for k, v in data.items() if k in {"is_repeat", "prio", "label_id"}}
-    if values.get("is_repeat", True) is None:
-        del values["is_repeat"]
+    """Set is_revive / prio / label_id on many cards with one UPDATE."""
+    values = {k: v for k, v in data.items() if k in {"is_revive", "prio", "label_id"}}
+    if values.get("is_revive", True) is None:
+        del values["is_revive"]
     if values:
         s.exec(update(Card).where(col(Card.id).in_(card_ids)).values(**values))
         s.commit()
@@ -418,7 +437,7 @@ def _board_column_ids(s: Session, board_id: int) -> list[int]:
 
 
 def get_deletable_cards(s: Session, board_id: int, mode: str) -> list[Card]:
-    """Preview: non-repeat cards a delete with this mode would remove."""
+    """Preview: non-revive cards a delete with this mode would remove."""
     col_ids = _board_column_ids(s, board_id)
     conditions, _ = _delete_conditions(mode)
     return list(
@@ -426,7 +445,7 @@ def get_deletable_cards(s: Session, board_id: int, mode: str) -> list[Card]:
             select(Card)
             .where(
                 col(Card.column_id).in_(col_ids),
-                col(Card.is_repeat).is_(False),
+                col(Card.is_revive).is_(False),
                 *conditions,
             )
             .order_by(col(Card.column_id), col(Card.position))
@@ -435,7 +454,7 @@ def get_deletable_cards(s: Session, board_id: int, mode: str) -> list[Card]:
 
 
 def delete_cards(s: Session, board_id: int, mode: str) -> int:
-    """Delete non-repeat cards per mode, optionally reset repeat cards."""
+    """Delete non-revive cards per mode, optionally reset revive cards."""
     col_ids = _board_column_ids(s, board_id)
     if not col_ids:
         return 0
@@ -443,7 +462,7 @@ def delete_cards(s: Session, board_id: int, mode: str) -> int:
     result = s.exec(
         delete(Card).where(
             col(Card.column_id).in_(col_ids),
-            col(Card.is_repeat).is_(False),
+            col(Card.is_revive).is_(False),
             *conditions,
         )
     )
@@ -451,7 +470,7 @@ def delete_cards(s: Session, board_id: int, mode: str) -> int:
     if reset_repeats:
         s.exec(
             update(Card)
-            .where(col(Card.column_id).in_(col_ids), col(Card.is_repeat).is_(True))
+            .where(col(Card.column_id).in_(col_ids), col(Card.is_revive).is_(True))
             .values(date_completed=None)
         )
     s.commit()
@@ -482,7 +501,7 @@ def sort_cards(s: Session, board: Board, by: str) -> None:
 
 
 # Labels
-# ponytail: labels are global (nice-todo schema), shared by all users.
+# ponytail: labels are global, shared by all users.
 # Upgrade path: label.owner_id + scope these functions.
 
 

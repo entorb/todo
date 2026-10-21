@@ -1,0 +1,7 @@
+# SPA fallback: serve index.html for vue-router history URLs (e.g. /todo/b/1)
+RewriteEngine On
+RewriteBase /todo/
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /todo/index.html [L]

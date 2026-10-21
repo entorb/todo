@@ -17,18 +17,18 @@ const none = computed(() => store.selected.size === 0)
       dense
       no-caps
       icon="repeat"
-      label="Set repeat"
+      label="Set revive"
       :disable="none"
-      @click="store.bulkUpdate({ is_repeat: true })"
+      @click="store.bulkUpdate({ is_revive: true })"
     />
     <q-btn
       type="button"
       dense
       no-caps
-      label="Unset repeat"
+      label="Unset revive"
       :style="unsetStyle"
       :disable="none"
-      @click="store.bulkUpdate({ is_repeat: false })"
+      @click="store.bulkUpdate({ is_revive: false })"
     />
     <q-btn
       type="button"

@@ -19,6 +19,7 @@ watch(
   },
   { immediate: true },
 )
+const isOwner = computed(() => store.board?.is_owner ?? false)
 const newTitle = ref("")
 // drag & drop updates the list optimistically, server order follows via moveCardTo
 const cards = computed({
@@ -77,6 +78,7 @@ function onCardDrop(event: DraggableEvent) {
   >
     <div class="row items-center no-wrap">
       <q-icon
+        v-if="isOwner"
         name="drag_indicator"
         class="column-handle cursor-move"
       />
@@ -86,6 +88,7 @@ function onCardDrop(event: DraggableEvent) {
         input-class="text-weight-bold text-subtitle1"
         borderless
         dense
+        :readonly="!isOwner"
         aria-label="Column name"
         @blur="saveName"
         @keydown.enter.prevent="($event.target as HTMLElement).blur()"
@@ -101,6 +104,7 @@ function onCardDrop(event: DraggableEvent) {
         <q-tooltip>open / total</q-tooltip>
       </q-badge>
       <q-btn
+        v-if="isOwner"
         type="button"
         flat
         round

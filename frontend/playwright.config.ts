@@ -14,7 +14,7 @@ export default defineConfig({
   reporter: "list",
   globalSetup: "./e2e/global-setup.ts",
   use: {
-    baseURL: "http://localhost:5173/todo-vue/",
+    baseURL: "http://localhost:5173/todo/",
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
@@ -27,7 +27,7 @@ export default defineConfig({
     },
     {
       command: "pnpm dev",
-      url: "http://localhost:5173/todo-vue/",
+      url: "http://localhost:5173/todo/",
       reuseExistingServer: !process.env["CI"],
       timeout: 120_000,
     },

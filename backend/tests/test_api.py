@@ -1,3 +1,5 @@
+from app import crud
+from app.models import Board
 from fastapi.testclient import TestClient
 
 
@@ -15,7 +17,7 @@ def _setup(client: TestClient, h: dict) -> tuple[int, int, int]:
 
 
 def test_e2e_flow_export(client: TestClient, auth_headers: dict):
-    """Port of nice-todo test_e2e_flow: build a board, sort, export markdown."""
+    """Build a board, sort, export markdown."""
     h = auth_headers
     board_id = client.post("/api/boards", json={"name": "Planning"}, headers=h).json()[
         "id"
@@ -121,15 +123,51 @@ def test_bulk_and_delete_preview(client: TestClient, auth_headers: dict):
     ).json()
     assert [c["id"] for c in preview] == [card_id]
     r = client.patch(
-        "/api/cards/bulk", json={"ids": [card_id], "is_repeat": True}, headers=h
+        "/api/cards/bulk", json={"ids": [card_id], "is_revive": True}, headers=h
     )
     assert r.status_code == 204
     r = client.delete(f"/api/boards/{board_id}/cards?mode=completed", headers=h)
     assert r.json() == {"count": 0}
     card = client.get("/api/boards/plan", headers=h).json()["columns"][0]["cards"][0]
-    assert card["is_repeat"]
+    assert card["is_revive"]
     assert card["date_completed"] is None  # repeat reset
     r = client.patch(
         "/api/cards/bulk", json={"ids": [card_id], "label_id": 999}, headers=h
     )
     assert r.status_code == 404
+
+
+def test_member_card_actions_only(
+    client: TestClient, auth_headers: dict, other_headers: dict, session
+):
+    board_id, col_id, card_id = _setup(client, auth_headers)
+    crud.add_board_member(session, session.get(Board, board_id), 2)
+    m = other_headers
+    boards = client.get("/api/boards", headers=m).json()
+    assert [(b["id"], b["is_owner"]) for b in boards] == [(board_id, False)]
+    assert client.get("/api/boards/plan", headers=m).json()["is_owner"] is False
+    assert client.get("/api/boards/plan", headers=auth_headers).json()["is_owner"]
+    for method, url, body in [
+        ("POST", "/api/cards", {"column_id": col_id, "title": "y"}),
+        ("PATCH", f"/api/cards/{card_id}", {"title": "z"}),
+        ("PATCH", "/api/cards/bulk", {"ids": [card_id], "prio": True}),
+        ("POST", f"/api/cards/{card_id}/move", {"column_id": col_id}),
+        ("POST", f"/api/cards/{card_id}/copy", {"column_id": col_id}),
+        ("DELETE", f"/api/cards/{card_id}", None),
+    ]:
+        r = client.request(method, url, json=body, headers=m)
+        assert r.status_code < 300, (method, url, r.status_code)
+    for method, url, body in [
+        ("PATCH", f"/api/boards/{board_id}", {"name": "x"}),
+        ("DELETE", f"/api/boards/{board_id}", None),
+        ("POST", f"/api/boards/{board_id}/sort?by=date", None),
+        ("GET", f"/api/boards/{board_id}/export", None),
+        ("GET", f"/api/boards/{board_id}/cards/deletable?mode=all", None),
+        ("DELETE", f"/api/boards/{board_id}/cards?mode=all", None),
+        ("PUT", f"/api/boards/{board_id}/columns/order", {"ids": [col_id]}),
+        ("POST", "/api/columns", {"board_id": board_id}),
+        ("PATCH", f"/api/columns/{col_id}", {"name": "x"}),
+        ("DELETE", f"/api/columns/{col_id}", None),
+    ]:
+        r = client.request(method, url, json=body, headers=m)
+        assert r.status_code == 404, (method, url, r.status_code)

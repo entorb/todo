@@ -70,8 +70,8 @@ function setPrio(prio: boolean | null) {
   void store.patchCard(props.card.id, { prio })
 }
 
-function setRepeat(isRepeat: boolean) {
-  void store.patchCard(props.card.id, { is_repeat: isRepeat })
+function setRevive(isRepeat: boolean) {
+  void store.patchCard(props.card.id, { is_revive: isRepeat })
 }
 
 function pickLabel() {
@@ -176,15 +176,15 @@ const prioOptions = computed(() =>
         @click="setPrio(false)"
       />
       <q-btn
-        v-if="card.is_repeat"
+        v-if="card.is_revive"
         type="button"
         flat
         round
         dense
         size="sm"
         icon="repeat"
-        aria-label="Unset repeat"
-        @click="setRepeat(false)"
+        aria-label="Unset revive"
+        @click="setRevive(false)"
       />
       <q-btn
         v-if="store.labels.length > 0"
@@ -212,9 +212,9 @@ const prioOptions = computed(() =>
           <q-list dense>
             <q-item
               clickable
-              @click="setRepeat(!card.is_repeat)"
+              @click="setRevive(!card.is_revive)"
             >
-              <q-item-section>{{ card.is_repeat ? "Unset Repeat" : "Set Repeat" }}</q-item-section>
+              <q-item-section>{{ card.is_revive ? "Unset Revive" : "Set Revive" }}</q-item-section>
             </q-item>
             <q-item
               v-for="o in prioOptions"
@@ -262,6 +262,7 @@ const prioOptions = computed(() =>
 <style scoped>
 .todo-card {
   position: relative;
+  flex-shrink: 0; /* grow with wrapped text, list scrolls instead */
   min-height: 30px;
   padding: 2px 8px;
   border-radius: 6px;

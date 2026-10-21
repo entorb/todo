@@ -63,6 +63,8 @@ import type {
   SortBoardData,
   SortBoardErrors,
   SortBoardResponses,
+  TriggerErrorData,
+  TriggerErrorResponses,
   UpdateBoardData,
   UpdateBoardErrors,
   UpdateBoardResponses,
@@ -116,7 +118,7 @@ export const login = <ThrowOnError extends boolean = true>(
 /**
  * List Boards
  *
- * List own boards incl. column names.
+ * List own and shared boards incl. column names.
  */
 export const listBoards = <ThrowOnError extends boolean = true>(
   options?: Options<ListBoardsData, ThrowOnError>,
@@ -346,7 +348,7 @@ export const createCard = <ThrowOnError extends boolean = true>(
 /**
  * Bulk Update Cards
  *
- * Set repeat / prio / label on many cards. Explicit null unsets prio/label.
+ * Set revive / prio / label on many cards. Explicit null unsets prio/label.
  */
 export const bulkUpdateCards = <ThrowOnError extends boolean = true>(
   options: Options<BulkUpdateCardsData, ThrowOnError>,
@@ -510,5 +512,19 @@ export const health = <ThrowOnError extends boolean = true>(
   (options?.client ?? client).get<HealthResponses, unknown, ThrowOnError>({
     responseType: "json",
     url: "/health",
+    ...options,
+  })
+
+/**
+ * Trigger Error
+ *
+ * Test.
+ */
+export const triggerError = <ThrowOnError extends boolean = true>(
+  options?: Options<TriggerErrorData, ThrowOnError>,
+): RequestResult<TriggerErrorResponses, unknown, ThrowOnError> =>
+  (options?.client ?? client).get<TriggerErrorResponses, unknown, ThrowOnError>({
+    responseType: "json",
+    url: "/sentry-test",
     ...options,
   })
