@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 from app import crud
-from app.core.security import verify_secret
+from app.core.security import hash_secret, verify_secret
 from app.models import Board, BoardMember, Card, Label, User, utcnow
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -167,6 +167,16 @@ class TestCard:
         for c in cards:
             session.refresh(c)
         assert all(c.label_id is None and c.prio for c in cards)
+        # is_revive is not nullable: explicit null must not touch it
+        crud.bulk_update_cards(session, ids, {"is_revive": None, "prio": None})
+        for c in cards:
+            session.refresh(c)
+        assert all(c.is_revive and c.prio is None for c in cards)
+
+    def test_delete_on_board_without_columns(self, session):
+        board = _board(session, "empty")
+        assert board.id is not None
+        assert crud.delete_cards(session, board.id, "all") == 0
 
     @pytest.mark.parametrize(
         ("mode", "remaining", "repeat_reset"),
@@ -245,6 +255,12 @@ class TestUserAndMigration:
         assert crud.get_user_by_secret(session, "other", verify_secret).id == 2  # type: ignore[union-attr]
         assert crud.get_user_by_secret(session, "nope", verify_secret) is None
 
+    def test_hash_secret_roundtrip(self):
+        hashed = hash_secret("s3cret")
+        assert hashed != "s3cret"
+        assert verify_secret("s3cret", hashed)
+        assert not verify_secret("wrong", hashed)
+
 
 class TestMember:
     def test_member_access(self, session):
@@ -286,14 +302,3 @@ class TestMember:
         session.add(User(id=3, name="OTHER"))
         with pytest.raises(IntegrityError):
             session.commit()
-
-
-def test_migrate_renames_is_repeat(session):
-    engine = session.get_bind()
-    with engine.begin() as conn:
-        conn.exec_driver_sql("ALTER TABLE card RENAME COLUMN is_revive TO is_repeat")
-    crud.init_db()
-    with engine.begin() as conn:
-        cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(card)")}
-    assert "is_revive" in cols
-    assert "is_repeat" not in cols

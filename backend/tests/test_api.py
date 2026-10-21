@@ -171,3 +171,39 @@ def test_member_card_actions_only(
     ]:
         r = client.request(method, url, json=body, headers=m)
         assert r.status_code == 404, (method, url, r.status_code)
+
+
+def test_owner_edit_and_delete(client: TestClient, auth_headers: dict):
+    """Rename / re-key board, rename column, label lifecycle, cascading deletes."""
+    h = auth_headers
+    board_id, col_id, card_id = _setup(client, h)
+    client.post("/api/boards", json={"name": "taken"}, headers=h)
+    r = client.patch(f"/api/boards/{board_id}", json={"key": "taken"}, headers=h)
+    assert r.status_code == 409
+    r = client.patch(
+        f"/api/boards/{board_id}", json={"name": " New ", "key": "NEW"}, headers=h
+    )
+    assert (r.json()["name"], r.json()["key"]) == ("New", "new")
+    assert client.get("/api/boards/plan", headers=h).status_code == 404
+
+    r = client.patch(f"/api/columns/{col_id}", json={"name": "Doing"}, headers=h)
+    assert r.json()["name"] == "Doing"
+
+    label_id = client.post(
+        "/api/labels", json={"name": "Work", "color": "#FF0000"}, headers=h
+    ).json()["id"]
+    client.patch(f"/api/cards/{card_id}", json={"label_id": label_id}, headers=h)
+    r = client.patch(
+        f"/api/labels/{label_id}", json={"name": "Job", "color": "#00ff00"}, headers=h
+    )
+    assert r.json()["name"] == "Job"
+    assert [lb["name"] for lb in client.get("/api/labels", headers=h).json()] == ["Job"]
+    assert client.delete(f"/api/labels/{label_id}", headers=h).status_code == 204
+    card = client.get("/api/boards/new", headers=h).json()["columns"][0]["cards"][0]
+    assert card["label_id"] is None
+
+    assert client.delete(f"/api/columns/{col_id}", headers=h).status_code == 204
+    r = client.patch(f"/api/cards/{card_id}", json={"title": "y"}, headers=h)
+    assert r.status_code == 404
+    assert client.delete(f"/api/boards/{board_id}", headers=h).status_code == 204
+    assert client.get("/api/boards/new", headers=h).status_code == 404
