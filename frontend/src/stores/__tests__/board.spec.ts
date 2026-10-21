@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia"
+import { Notify } from "quasar"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { bulkUpdateCards, getBoard, updateCard } from "@/client/index.ts"
@@ -60,5 +61,30 @@ describe("board store", () => {
     store.toggleBulk()
     await store.bulkUpdate({ prio: true })
     expect(bulkUpdateCards).not.toHaveBeenCalled()
+  })
+})
+
+describe("board store run / optimistic updates", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it("run notifies on error and always reloads board", async () => {
+    vi.mocked(getBoard).mockResolvedValue({ data: BOARD } as never)
+    const store = useBoardStore()
+    await store.loadBoard("b")
+    vi.mocked(getBoard).mockClear()
+
+    expect(await store.run(async () => Promise.reject(new Error("Conflict")))).toBe(false)
+    expect(Notify.create).toHaveBeenCalledWith({ type: "warning", message: "Conflict" })
+    expect(await store.run(async () => Promise.resolve())).toBe(true)
+    expect(getBoard).toHaveBeenCalledTimes(2)
+  })
+
+  it("sortCards without board is a no-op", async () => {
+    const store = useBoardStore()
+    expect(await store.sortCards("prio")).toBe(false)
+    expect(getBoard).not.toHaveBeenCalled()
   })
 })
