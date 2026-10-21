@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { login } from "./helpers.ts"
+import { addColumn, login } from "./helpers.ts"
 
 test("create board, column, cards; complete; export", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"])
@@ -9,9 +9,9 @@ test("create board, column, cards; complete; export", async ({ page, context }) 
   await page.getByRole("button", { name: "New Board" }).click()
   await page.getByLabel("Board Name").fill("Planning")
   await page.getByRole("button", { name: "Save" }).click()
-  await expect(page).toHaveURL(/todo-vue\/b\/planning$/)
+  await expect(page).toHaveURL(/todo\/b\/planning$/)
 
-  await page.getByRole("button", { name: "Add column" }).click()
+  await addColumn(page)
   const addCard = page.getByLabel("Add a card")
   for (const title of ["Buy milk", "Write report"]) {
     await addCard.fill(title)

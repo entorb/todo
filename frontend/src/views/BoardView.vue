@@ -111,20 +111,36 @@ function toggleDark() {
   localStorage.setItem("dark", String($q.dark.isActive))
 }
 
+// members may only edit cards, board and column options are owner-only
+const isOwner = computed(() => store.board?.is_owner ?? false)
+
 const hideLabel = computed(() => (store.hideCompleted ? "Show completed" : "Hide completed"))
 
 // toolbar buttons on desktop, menu items on phones
-const toolbarActions = [
-  { label: "Sort by prio, label, title", icon: "swap_vert", run: () => store.sortCards("prio") },
-  { label: "Sort by date", icon: "calendar_month", run: () => store.sortCards("date") },
+const allToolbarActions = [
   {
-    label: "Add column",
-    icon: "view_column",
-    run: () => store.board != null && store.addColumn(store.board.id),
+    label: "Sort by prio, label, title",
+    icon: "swap_vert",
+    ownerOnly: true,
+    run: () => store.sortCards("prio"),
   },
-  { label: "Export", icon: "download", run: () => openDialog(ExportDialog) },
-  { label: "Sync from server", icon: "sync", run: () => store.refresh() },
+  {
+    label: "Sort by date",
+    icon: "calendar_month",
+    ownerOnly: true,
+    run: () => store.sortCards("date"),
+  },
+  {
+    label: "Export",
+    icon: "download",
+    ownerOnly: true,
+    run: () => openDialog(ExportDialog),
+  },
+  { label: "Sync from server", icon: "sync", ownerOnly: false, run: () => store.refresh() },
 ]
+const toolbarActions = computed(() =>
+  allToolbarActions.filter((a) => isOwner.value || !a.ownerOnly),
+)
 
 function manageLabels() {
   $q.dialog({ component: ManageLabelsDialog }).onDismiss(() => store.refresh())
@@ -228,6 +244,14 @@ async function logout() {
                 </q-item>
                 <q-separator class="xs" />
                 <q-item
+                  v-if="isOwner"
+                  clickable
+                  @click="store.board != null && store.addColumn(store.board.id)"
+                >
+                  <q-item-section>Add column</q-item-section>
+                </q-item>
+                <q-item
+                  v-if="isOwner"
                   clickable
                   @click="openBoardDialog(true)"
                 >
@@ -252,20 +276,22 @@ async function logout() {
                 >
                   <q-item-section>Manage Labels</q-item-section>
                 </q-item>
-                <q-separator />
-                <q-item
-                  clickable
-                  @click="openDialog(DeleteCardsDialog)"
-                >
-                  <q-item-section>Delete Cards</q-item-section>
-                </q-item>
-                <q-item
-                  clickable
-                  class="text-negative"
-                  @click="confirmDeleteBoard"
-                >
-                  <q-item-section>Delete Board</q-item-section>
-                </q-item>
+                <template v-if="isOwner">
+                  <q-separator />
+                  <q-item
+                    clickable
+                    @click="openDialog(DeleteCardsDialog)"
+                  >
+                    <q-item-section>Delete Cards</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    class="text-negative"
+                    @click="confirmDeleteBoard"
+                  >
+                    <q-item-section>Delete Board</q-item-section>
+                  </q-item>
+                </template>
                 <q-separator />
                 <q-item
                   clickable
@@ -289,6 +315,7 @@ async function logout() {
           This board has no columns yet
         </div>
         <q-btn
+          v-if="isOwner"
           type="button"
           color="white"
           text-color="primary"
@@ -302,6 +329,7 @@ async function logout() {
         v-model="columns"
         class="columns-row row no-wrap"
         handle=".column-handle"
+        :disabled="!isOwner"
         :animation="150"
         @end="onColumnDrop"
       >
@@ -327,7 +355,7 @@ async function logout() {
 <style scoped>
 /* page fills viewport, columns scroll individually */
 .board-page {
-  padding: 16px 24px;
+  padding: calc(16px + env(safe-area-inset-top)) 24px 16px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -345,7 +373,7 @@ async function logout() {
 }
 @media (max-width: 600px) {
   .board-page {
-    padding: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 8px 8px;
     height: auto;
   }
   .columns-row {

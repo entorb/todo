@@ -9,7 +9,7 @@
 
 import os
 
-app_path = os.environ["HOME"] + "/todo/"
+app_path = os.environ["HOME"] + "/be/todo/"
 
 wsgi_app = "app.main:app"
 bind = ":9003"

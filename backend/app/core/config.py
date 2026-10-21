@@ -7,10 +7,10 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).parent.parent.parent  # backend/ (local), ~/todo/ (PROD)
+BASE_DIR = Path(__file__).parent.parent.parent  # backend/ (local), ~/be/todo/ (PROD)
 
 # to distinguish PROD vs. Local
-PATH_ON_WEBSERVER = Path("/home/entorb/todo")
+PATH_ON_WEBSERVER = Path("/home/entorb/be/todo")
 
 
 class Settings(BaseSettings):

@@ -4,9 +4,11 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sentry_sdk.integrations.logging import LoggingIntegration
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -19,6 +21,14 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 settings = get_settings()
+
+if settings.env == "PROD":
+    sentry_sdk.init(
+        dsn="https://7ca6442c26bbc22d5f6ce361630dd03e@o4507139041525760.ingest.de.sentry.io/4512292047552592",
+        integrations=[
+            LoggingIntegration(capture_sentry_logs=True),
+        ],
+    )
 
 
 @asynccontextmanager
@@ -33,7 +43,7 @@ app = FastAPI(
     description="Kanban todo boards",
     version="0.1.0",
     # same root for prod and dev to make debugging easier
-    root_path="/be/todo-fastapi",
+    root_path="/be/todo",
     lifespan=lifespan,
     # clean operation ids -> clean names in generated TS client
     generate_unique_id_function=lambda route: route.name,
@@ -76,3 +86,10 @@ app.include_router(labels.router, prefix="/api/labels", tags=["labels"])
 def health() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "environment": settings.env}
+
+
+# https://entorb.net/be/todo/sentry-test
+@app.get("/sentry-test")
+async def trigger_error() -> None:
+    """Test."""
+    _ = 1 / 0

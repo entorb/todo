@@ -7,7 +7,7 @@ import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 import vueDevTools from "vite-plugin-vue-devtools"
 
-const BASE = "/todo-vue/"
+const BASE = "/todo/"
 const TARGETS = ["iOS >= 15", "Safari >= 15", "Chrome >= 87", "Firefox >= 78", "Edge >= 88"]
 
 // https://vite.dev/config/

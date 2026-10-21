@@ -72,7 +72,6 @@ const router = createRouter({
 router.beforeEach((to): RouteLocationRaw | true => {
   const authStore = useAuthStore()
   const requiresAuth = to.meta["requiresAuth"] !== false
-  const { key } = to.query
 
   if (!authStore.isAuthenticated && tokenManager.get() != null) {
     authStore.loadUserFromToken()
@@ -83,10 +82,6 @@ router.beforeEach((to): RouteLocationRaw | true => {
   }
   if (to.name === "login" && authStore.isAuthenticated) {
     return { name: "boards" }
-  }
-  if (to.name === "boards" && typeof key === "string" && key !== "") {
-    // old nice-todo bookmarks: /?key=<key>
-    return { name: "board", params: { key } }
   }
   return true
 })

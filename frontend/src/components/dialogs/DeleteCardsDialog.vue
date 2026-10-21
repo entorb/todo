@@ -41,9 +41,9 @@ async function loadPreview() {
 
 watch(mode, loadPreview, { immediate: true })
 
-/** Mark as repeat -> excluded from delete. */
-async function markRepeat(card: CardPublic) {
-  await store.run(() => updateCard({ path: { card_id: card.id }, body: { is_repeat: true } }))
+/** Mark as revive -> excluded from delete. */
+async function markRevive(card: CardPublic) {
+  await store.run(() => updateCard({ path: { card_id: card.id }, body: { is_revive: true } }))
   await loadPreview()
 }
 
@@ -76,7 +76,7 @@ async function doDelete() {
           ]"
         />
         <div class="text-caption text-grey-7">
-          Repeat cards will not be deleted.
+          Revive cards will not be deleted.
         </div>
       </q-card-section>
       <q-card-section
@@ -106,10 +106,10 @@ async function doDelete() {
               dense
               size="sm"
               icon="repeat"
-              aria-label="Mark as repeat (keep)"
-              @click="markRepeat(card)"
+              aria-label="Mark as revive (keep)"
+              @click="markRevive(card)"
             >
-              <q-tooltip>Mark as repeat (keep)</q-tooltip>
+              <q-tooltip>Mark as revive (keep)</q-tooltip>
             </q-btn>
             <span class="ellipsis">{{ card.title }}</span>
           </div>

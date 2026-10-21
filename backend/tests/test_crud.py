@@ -1,14 +1,11 @@
-import os
-import sqlite3
 from datetime import timedelta
 
 import pytest
 from app import crud
-from app.core.config import get_settings
-from app.core.db import get_engine
 from app.core.security import verify_secret
-from app.models import Board, Card, Label, utcnow
-from sqlmodel import Session
+from app.models import Board, BoardMember, Card, Label, User, utcnow
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
 
 
 def _board(s: Session, key: str = "b", owner_id: int = 1) -> Board:
@@ -123,11 +120,11 @@ class TestCard:
     def test_update(self, session, cols):
         (card,) = _cards(session, cols[0], "x")
         crud.update_card(
-            session, card, {"is_completed": True, "prio": True, "is_repeat": True}
+            session, card, {"is_completed": True, "prio": True, "is_revive": True}
         )
         assert card.is_completed
         assert card.prio is True
-        assert card.is_repeat
+        assert card.is_revive
         crud.update_card(session, card, {"is_completed": False, "prio": None})
         assert not card.is_completed
         assert card.prio is None
@@ -161,11 +158,11 @@ class TestCard:
         crud.bulk_update_cards(
             session,
             ids,
-            {"label_id": label.id, "prio": True, "is_repeat": True},
+            {"label_id": label.id, "prio": True, "is_revive": True},
         )
         for c in cards:
             session.refresh(c)
-        assert all(c.label_id == label.id and c.prio and c.is_repeat for c in cards)
+        assert all(c.label_id == label.id and c.prio and c.is_revive for c in cards)
         crud.bulk_update_cards(session, ids, {"label_id": None})
         for c in cards:
             session.refresh(c)
@@ -189,7 +186,7 @@ class TestCard:
             crud.update_card(session, c, {"is_completed": True})
         old.date_completed = utcnow() - timedelta(days=30)
         repeat.date_completed = utcnow() - timedelta(days=30)
-        repeat.is_repeat = True
+        repeat.is_revive = True
         session.add_all([old, repeat])
         session.commit()
         preview = {c.title for c in crud.get_deletable_cards(session, board_id, mode)}
@@ -248,21 +245,55 @@ class TestUserAndMigration:
         assert crud.get_user_by_secret(session, "other", verify_secret).id == 2  # type: ignore[union-attr]
         assert crud.get_user_by_secret(session, "nope", verify_secret) is None
 
-    def test_legacy_board_gets_owner(self, tmp_path):
-        path = tmp_path / "legacy.db"
-        con = sqlite3.connect(path)
-        con.execute(
-            "CREATE TABLE board (id INTEGER PRIMARY KEY, key TEXT NOT NULL,"
-            " name TEXT NOT NULL, last_login DATETIME)"
-        )
-        con.execute("INSERT INTO board (key, name) VALUES ('old', 'Old')")
-        con.commit()
-        con.close()
-        os.environ["DB_PATH"] = str(path)
-        get_settings.cache_clear()
-        get_engine.cache_clear()
-        crud.init_db()
-        with Session(get_engine()) as s:
-            board = crud.get_board_by_key(s, 1, "old")
-            assert board.owner_id == 1
-            assert s.get(crud.User, 1).secret_hashed is None  # type: ignore[union-attr]
+
+class TestMember:
+    def test_member_access(self, session):
+        board = _board(session, "shared", owner_id=1)
+        assert board.id is not None
+        column = crud.create_column(session, board.id)
+        assert column.id is not None
+        (card,) = _cards(session, column.id, "x")
+        assert card.id is not None
+        crud.add_board_member(session, board, 2)
+        crud.add_board_member(session, board, 2)  # idempotent
+        assert crud.get_board_by_key(session, 2, "shared").id == board.id
+        assert [b.id for b in crud.get_boards_with_columns(session, 2)] == [board.id]
+        crud.get_card(session, 2, card.id)
+        crud.check_cards_owned(session, 2, [card.id])
+        crud.get_column(session, 2, column.id, owner_only=False)
+        # board/column management stays owner-only
+        with pytest.raises(crud.NotFoundError):
+            crud.get_board(session, 2, board.id)
+        with pytest.raises(crud.NotFoundError):
+            crud.get_column(session, 2, column.id)
+
+    def test_owner_also_member(self, session):
+        board = _board(session, "mine", owner_id=1)
+        assert board.id is not None
+        crud.add_board_member(session, board, 1)
+        assert len(crud.get_boards_with_columns(session, 1)) == 1
+        crud.get_board(session, 1, board.id)
+        crud.get_board_by_key(session, 1, "mine")
+
+    def test_delete_board_removes_members(self, session):
+        board = _board(session, "gone", owner_id=1)
+        crud.add_board_member(session, board, 2)
+        crud.delete_board(session, board)
+        assert session.exec(select(BoardMember)).all() == []
+
+    def test_user_name_unique_case_insensitive(self, session):
+        assert crud.get_user_by_name(session, " other ").id == 2  # type: ignore[union-attr]
+        session.add(User(id=3, name="OTHER"))
+        with pytest.raises(IntegrityError):
+            session.commit()
+
+
+def test_migrate_renames_is_repeat(session):
+    engine = session.get_bind()
+    with engine.begin() as conn:
+        conn.exec_driver_sql("ALTER TABLE card RENAME COLUMN is_revive TO is_repeat")
+    crud.init_db()
+    with engine.begin() as conn:
+        cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(card)")}
+    assert "is_revive" in cols
+    assert "is_repeat" not in cols

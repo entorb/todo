@@ -16,5 +16,5 @@ export type CreateClientConfig<T extends ClientOptions = ClientOptions2> = (
 ) => Config<Required<ClientOptions> & T>
 
 export const client: Client = createClient(
-  createConfig<ClientOptions2>({ baseURL: "/be/todo-fastapi", throwOnError: true }),
+  createConfig<ClientOptions2>({ baseURL: "/be/todo", throwOnError: true }),
 )
