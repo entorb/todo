@@ -1,6 +1,6 @@
 # Backend - Coding Guidelines
 
-FastAPI + SQLModel + SQLite. Layout like full-stack-fastapi-template. Run all commands from `backend/` (`uv run ...`), or via `../scripts/*.sh`.
+FastAPI + SQLModel + SQLite. Layout like full-stack-fastapi-template. Run all commands from `backend/` (`uv run ...`), or via `../scripts/*.sh`. Ruff handles formatting, no need for manual code formatting.
 
 ## Layout
 

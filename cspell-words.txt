@@ -4,6 +4,7 @@ autouse
 browserslist
 checkpw
 conftest
+cret
 datetimes
 entorb
 eslintcache
