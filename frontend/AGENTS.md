@@ -1,6 +1,6 @@
 # Frontend - Coding Guidelines
 
-Vue 3 + Quasar + Pinia + TypeScript, Vite base `/todo/`. Run commands from `frontend/` (`pnpm exec ...`), or via `../scripts/*.sh`. ESLint and Biome handle formatting - this guide covers architectural decisions.
+Vue 3 + Quasar + Pinia + TypeScript, Vite base `/todo/`. Run commands from `frontend/` (`pnpm exec ...`), or via `../scripts/*.sh`. Biome handles formatting, no need for manual code formatting. This guide covers architectural decisions.
 
 ## Layout
 
@@ -9,7 +9,7 @@ Vue 3 + Quasar + Pinia + TypeScript, Vite base `/todo/`. Run commands from `fron
 | `src/client/` | generated API client (`scripts/gen_api_for_vue.sh`) — DO NOT edit |
 | `src/services/apiClient.ts` | client config, `tokenManager` (localStorage), 401 handler, `errorMessage()` |
 | `src/config/env.ts` | validated env (`VITE_API_BASE_URL`) |
-| `src/router/index.ts` | routes `/` (boards), `/b/:key` (board), `/login`; auth guard; legacy `/?key=` redirect |
+| `src/router/index.ts` | routes `/` (boards), `/b/:key` (board), `/login`; auth guard |
 | `src/stores/auth.ts` | login / logout, user from JWT |
 | `src/stores/board.ts` | boards, current board, labels, bulk selection; all board mutations via `run()` |
 | `src/views/` | `BoardListView`, `BoardView`, `LoginView` |
@@ -36,6 +36,7 @@ Open via `$q.dialog({ component: XyzDialog, componentProps })`. Component uses `
 
 - Unit: `**/__tests__/*.spec.ts` (vitest, jsdom, `src/__tests__/setup.ts` mocks localStorage).
 - Store tests mock `@/client/index.ts` and `quasar` (`Notify`) with `vi.mock`, see `stores/__tests__/board.spec.ts`.
+- Component tests: `vi.mock("@/client/index.ts")` + helpers in `src/__tests__/mount.ts`: `mountApp` (Quasar, pinia, memory router, QDialog/QPage stubbed inline), `seedBoard`, `dialogOk` (stub `$q.dialog`), `button`, `menuItem` (QMenu is teleported to body).
 - E2E: `scripts/run_e2e.sh` starts BE (`sqlite-e2e.db`) + Vite, login secret `test`.
 
 ---

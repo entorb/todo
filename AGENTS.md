@@ -81,7 +81,7 @@ If `scripts/run_spelling.sh` finds unknown words, these are written to `cspell-w
 
 ### Auth
 
-Same as korrekturleser: `POST /api/auth/login {secret}` → bcrypt check against all `user.secret_hashed` → HS256 JWT (24h) → FE stores in localStorage, sends `Authorization: Bearer`. Login rate limit 5/min per IP (PROD only). FE logs out on any 401.
+Same as korrekturleser: `POST /api/auth/login {secret}` → bcrypt check against all `user.secret_hashed` → HS256 JWT (1 year) → FE stores in localStorage, sends `Authorization: Bearer`. Login rate limit 5/min per IP (PROD only). FE logs out on any 401.
 
 ### Ownership
 
