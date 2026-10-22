@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
-import { useRouter } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 
 import { useAuthStore } from "@/stores/auth.ts"
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const username = ref("") // dummy field, added for password manager compatibility
 const secret = ref("")
@@ -21,13 +22,15 @@ async function handleLogin() {
 
   // If the lazy-loaded chunk fails (e.g. stale deploy), fall back to a hard
   // navigation so the browser fetches fresh assets.
+  const redirect = String(route.query["redirect"] ?? "")
+  const target = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/"
   try {
-    const failure = await router.replace({ name: "boards" })
+    const failure = await router.replace(target)
     if (failure) {
-      globalThis.location.replace(router.resolve({ name: "boards" }).href)
+      globalThis.location.replace(router.resolve(target).href)
     }
   } catch {
-    globalThis.location.replace(router.resolve({ name: "boards" }).href)
+    globalThis.location.replace(router.resolve(target).href)
   }
 }
 </script>
