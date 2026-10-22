@@ -27,6 +27,9 @@ def main() -> None:
             if len(sys.argv) < 3:  # noqa: PLR2004
                 print(f"User {user_id} missing, pass a name to create it.")
                 sys.exit(1)
+            if crud.get_user_by_name(s, sys.argv[2]) is not None:
+                print(f"User name '{sys.argv[2]}' already taken (case-insensitive).")
+                sys.exit(1)
             user = User(id=user_id, name=sys.argv[2])
         secret = getpass.getpass("Secret: ")
         if len(secret) < 12:  # noqa: PLR2004

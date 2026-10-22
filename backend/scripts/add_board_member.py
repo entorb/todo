@@ -42,7 +42,7 @@ def main() -> None:
             print("Error: board or user not found")
             sys.exit(1)
         crud.add_board_member(s, board, user.id)  # type: ignore[arg-type]
-        print(f"User '{user.name}' is member of board '{board.key}'")
+        print(f"User '{user.name}' added to board '{board.key}'")
 
 
 if __name__ == "__main__":

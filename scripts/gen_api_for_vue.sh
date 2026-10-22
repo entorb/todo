@@ -11,7 +11,7 @@ trap cleanup EXIT
 
 # start FastAPI if not already running
 if ! curl -sf localhost:9003/openapi.json >/dev/null 2>&1; then
-  (cd backend && uv run --no-build uvicorn app.main:app --host localhost --port 9003) &
+  (cd backend && exec uv run --no-build uvicorn app.main:app --host localhost --port 9003) &
   FASTAPI_PID=$!
   i=0
   until curl -sf localhost:9003/openapi.json >/dev/null 2>&1; do
