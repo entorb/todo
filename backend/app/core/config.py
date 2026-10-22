@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
     jwt_secret_key: str = Field(min_length=32)
     jwt_algorithm: Literal["HS256"] = "HS256"
-    jwt_expire_hours: int = 24
+    jwt_expire_hours: int = 24 * 365
     db_path: Path = BASE_DIR / "sqlite.db"
     env: Literal["PROD", "Local"] = "PROD" if PATH_ON_WEBSERVER.is_dir() else "Local"
 
