@@ -7,7 +7,7 @@
  * so the browser fetches the latest assets.
  */
 
-import { createRouter, createWebHistory, type RouteLocationRaw } from "vue-router"
+import { createRouter, createWebHistory, type RouteLocationRaw, START_LOCATION } from "vue-router"
 
 import { tokenManager } from "@/services/apiClient.ts"
 import { useAuthStore } from "@/stores/auth.ts"
@@ -69,7 +69,7 @@ const router = createRouter({
 })
 
 // eslint-disable-next-line sonarjs/function-return-type -- guard returns redirect or true
-router.beforeEach((to): RouteLocationRaw | true => {
+router.beforeEach((to, from): RouteLocationRaw | true => {
   const authStore = useAuthStore()
   const requiresAuth = to.meta["requiresAuth"] !== false
 
@@ -78,10 +78,15 @@ router.beforeEach((to): RouteLocationRaw | true => {
   }
 
   if (requiresAuth && !authStore.isAuthenticated) {
-    return { name: "login" }
+    return { name: "login", query: { redirect: to.fullPath } }
   }
   if (to.name === "login" && authStore.isAuthenticated) {
     return { name: "boards" }
+  }
+  // app start on board list → reopen last board (only first navigation, so "back to boards" works)
+  const lastBoard = localStorage.getItem("last_board_key")
+  if (to.name === "boards" && from === START_LOCATION && lastBoard != null) {
+    return { name: "board", params: { key: lastBoard } }
   }
   return true
 })

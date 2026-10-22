@@ -26,7 +26,7 @@ const cards = computed({
   get: () => props.column.cards,
   set: (value: CardPublic[]) => store.setCards(props.column.id, value),
 })
-const openCount = computed(() => cards.value.filter((c) => c.date_completed == null).length)
+const closedCount = computed(() => cards.value.filter((c) => c.date_completed != null).length)
 const addInput = ref<{ focus: () => void } | null>(null)
 
 function revertName(event: KeyboardEvent) {
@@ -99,9 +99,9 @@ function onCardDrop(event: DraggableEvent) {
         color="blue-grey-3"
         text-color="blue-grey-10"
         class="q-mr-xs"
-        :label="`${openCount}/${cards.length}`"
+        :label="`${closedCount}/${cards.length}`"
       >
-        <q-tooltip>open / total</q-tooltip>
+        <q-tooltip>closed / total</q-tooltip>
       </q-badge>
       <q-btn
         v-if="isOwner"
