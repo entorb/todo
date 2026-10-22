@@ -27,10 +27,12 @@ async function load(key: string) {
   // touch last_login only when switching boards, not on reload
   const touch = sessionStorage.getItem(LAST_BOARD_KEY) !== key
   sessionStorage.setItem(LAST_BOARD_KEY, key)
+  localStorage.setItem(LAST_BOARD_KEY, key) // reopened on app start, see router
   store.exitBulk()
   try {
     await Promise.all([store.loadBoard(key, touch), store.loadLabels(), store.loadBoards()])
   } catch (err) {
+    localStorage.removeItem(LAST_BOARD_KEY)
     $q.notify({ type: "warning", message: errorMessage(err) })
     await router.replace({ name: "boards" })
   }

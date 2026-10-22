@@ -18,7 +18,10 @@ app.use(Quasar, quasarConfig)
 installUnauthorizedHandler(async () => {
   useAuthStore().logout()
   if (router.currentRoute.value.name !== "login") {
-    await router.replace({ name: "login" })
+    await router.replace({
+      name: "login",
+      query: { redirect: router.currentRoute.value.fullPath },
+    })
   }
 })
 

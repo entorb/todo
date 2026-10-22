@@ -28,7 +28,7 @@ describe("BoardColumn", () => {
     vi.clearAllMocks()
   })
 
-  it("renders cards and open/total count", () => {
+  it("renders cards and closed/total count", () => {
     const { wrapper } = setup()
     expect(wrapper.findAll("[data-card-id]")).toHaveLength(2)
     expect(wrapper.text()).toContain("1/2")
