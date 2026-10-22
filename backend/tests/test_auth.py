@@ -15,7 +15,7 @@ def test_login_ok(client: TestClient):
         data["access_token"], get_settings().jwt_secret_key, algorithms=["HS256"]
     )
     assert (payload["user_id"], payload["username"]) == (1, "Torben")
-    assert payload["exp"] - payload["iat"] == 24 * 3600
+    assert payload["exp"] - payload["iat"] == 365 * 24 * 3600
 
 
 def test_login_wrong_secret(client: TestClient):
