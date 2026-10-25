@@ -34,6 +34,6 @@ echo "### Install packages"
 ssh entorb@entorb.net "pip3.11 install --user -r be/todo/requirements.txt > /dev/null"
 
 echo "### Restart fastapi"
-ssh entorb@entorb.net "supervisorctl restart todo-fastapi"
+ssh entorb@entorb.net "supervisorctl restart fastapi-todo"
 
 echo "## DONE"
