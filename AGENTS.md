@@ -16,7 +16,7 @@ pnpm install  # pnpm workspace: lockfile + store at root, frontend/node_modules 
 (cd backend && uv run python -m scripts.set_user_secret 1)  # login secret of user 1
 ```
 
-Startup creates/migrates `backend/sqlite.db`. No secret is ever seeded, users without `secret_hashed` cannot log in. Prod detection: `/home/entorb/todo` exists.
+Startup creates/migrates `backend/sqlite.db`. No secret is ever seeded, users without `secret_hashed` cannot log in.
 
 ## Run apps
 
