@@ -14,8 +14,18 @@ component=${component:-entorb_todo}
 mkdir -p tmp
 out=tmp/sonar.json
 
-curl -sS \
-  "$api?componentKeys=$component&resolved=false" >"$out"
+# API caps a page at 500 issues; fetch pages until all are collected.
+# shortcut: SonarCloud refuses p*ps > 10000, split by rule/severity if ever needed.
+page=1
+echo '{"total":0,"issues":[]}' >"$out"
+while :; do
+  curl -sS "$api?componentKeys=$component&resolved=false&ps=500&p=$page" >"$out.page"
+  jq -s '{total: .[1].total, issues: (.[0].issues + .[1].issues)}' "$out" "$out.page" >"$out.tmp" && mv "$out.tmp" "$out"
+  [ "$(jq '.issues | length' "$out")" -ge "$(jq -r '.total' "$out")" ] && break
+  [ "$(jq '.issues | length' "$out.page")" -eq 0 ] && break
+  page=$((page + 1))
+done
+rm -f "$out.page"
 
 # Reduce to the fields an AI needs to fix each finding (file/line/message/flows).
 jq '{
