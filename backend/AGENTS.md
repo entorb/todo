@@ -8,7 +8,7 @@ FastAPI + SQLModel + SQLite. Layout like full-stack-fastapi-template. Run all co
 | ---- | ------- |
 | `app/main.py` | app, `root_path=/be/todo`, routers under `/api/*`, exception handlers, CORS, lifespan → `crud.init_db()` |
 | `app/core/config.py` | pydantic-settings from `backend/.env`, `get_settings()` (lru_cache), PROD/Local detection, CORS origins |
-| `app/core/db.py` | `get_engine()` (lru_cache, WAL, FK on), `get_session()` |
+| `app/core/db.py` | `get_engine()` (lru_cache, FK on), `get_session()` |
 | `app/core/security.py` | bcrypt `hash_secret`, JWT `create_access_token` / `decode_token` |
 | `app/api/deps.py` | `SessionDep`, `CurrentUser` (`UserInfo`), `limiter` (slowapi, PROD only) |
 | `app/api/routes/` | `auth`, `boards`, `columns`, `cards`, `labels` — thin HTTP layer |

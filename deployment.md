@@ -3,7 +3,7 @@
 Layout on webserver:
 
 - `~/html/todo/` — built frontend (`frontend/dist`)
-- `~/be/todo/` — backend: `app/`, `scripts/`, `requirements.txt`, `.env`, `sqlite.db`
+- `~/be/todo/` — backend: `app/`, `scripts/`, `requirements.txt`, `.env`, `db.sqlite`
 
 ## Initial setup
 

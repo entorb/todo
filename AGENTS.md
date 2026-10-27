@@ -16,7 +16,7 @@ pnpm install  # pnpm workspace: lockfile + store at root, frontend/node_modules 
 (cd backend && uv run python -m scripts.set_user_secret 1)  # login secret of user 1
 ```
 
-Startup creates/migrates `backend/sqlite.db`. No secret is ever seeded, users without `secret_hashed` cannot log in.
+Startup creates/migrates `backend/db.sqlite`. No secret is ever seeded, users without `secret_hashed` cannot log in.
 
 ## Run apps
 
@@ -99,7 +99,7 @@ Every board / column / card access goes through `crud.get_board|get_column|get_c
 | Python + coverage | `scripts/run_py_test_cov.sh` | |
 | Vue | `scripts/chk_js_test.sh` | vitest, jsdom |
 | Vue + coverage | `scripts/run_js_test_cov.sh` | |
-| E2E | `scripts/run_e2e.sh` | own DB `backend/sqlite-e2e.db`, seeded by `frontend/e2e/global-setup.ts` |
+| E2E | `scripts/run_e2e.sh` | own DB `backend/db-e2e.sqlite`, seeded by `frontend/e2e/global-setup.ts` |
 
 ## Deployment
 
