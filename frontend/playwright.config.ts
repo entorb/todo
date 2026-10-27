@@ -2,7 +2,7 @@ import process from "node:process"
 import { defineConfig, devices } from "@playwright/test"
 
 // e2e uses its own DB with a test user, see e2e/global-setup.ts
-const E2E_ENV = "DB_PATH=sqlite-e2e.db JWT_SECRET_KEY=e2e-secret-e2e-secret-e2e-secret-e2e"
+const E2E_ENV = "DB_PATH=db-e2e.sqlite JWT_SECRET_KEY=e2e-secret-e2e-secret-e2e-secret-e2e"
 
 export default defineConfig({
   testDir: "./e2e",
