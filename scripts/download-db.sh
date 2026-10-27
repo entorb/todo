@@ -2,8 +2,8 @@
 set -e
 cd "$(dirname "$0")/../backend"
 
-# consistent snapshot of the WAL-mode DB via sqlite3 backup API
-ssh entorb@entorb.net "cd be/todo && python3.11 -c \"import sqlite3; s=sqlite3.connect('sqlite.db'); d=sqlite3.connect('sqlite-snapshot.db'); s.backup(d); d.close(); s.close()\""
-scp entorb@entorb.net:be/todo/sqlite-snapshot.db ./sqlite.db
-ssh entorb@entorb.net "rm be/todo/sqlite-snapshot.db"
-echo "downloaded to backend/sqlite.db"
+# consistent snapshot via sqlite3 backup API
+ssh entorb@entorb.net "cd be/todo && python3.11 -c \"import sqlite3; s=sqlite3.connect('db.sqlite'); d=sqlite3.connect('db-snapshot.sqlite'); s.backup(d); d.close(); s.close()\""
+scp entorb@entorb.net:be/todo/db-snapshot.sqlite ./db.sqlite
+ssh entorb@entorb.net "rm be/todo/db-snapshot.sqlite"
+echo "downloaded to backend/db.sqlite"
