@@ -37,7 +37,7 @@ Open via `$q.dialog({ component: XyzDialog, componentProps })`. Component uses `
 - Unit: `**/__tests__/*.spec.ts` (vitest, jsdom, `src/__tests__/setup.ts` mocks localStorage).
 - Store tests mock `@/client/index.ts` and `quasar` (`Notify`) with `vi.mock`, see `stores/__tests__/board.spec.ts`.
 - Component tests: `vi.mock("@/client/index.ts")` + helpers in `src/__tests__/mount.ts`: `mountApp` (Quasar, pinia, memory router, QDialog/QPage stubbed inline), `seedBoard`, `dialogOk` (stub `$q.dialog`), `button`, `menuItem` (QMenu is teleported to body).
-- E2E: `scripts/run_e2e.sh` starts BE (`sqlite-e2e.db`) + Vite, login secret `test`.
+- E2E: `scripts/run_e2e.sh` starts BE (`db-e2e.sqlite`) + Vite, login secret `test`.
 
 ---
 
