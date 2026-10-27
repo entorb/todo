@@ -4,11 +4,9 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-import sentry_sdk
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sentry_sdk.integrations.logging import LoggingIntegration
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -23,6 +21,9 @@ logging.basicConfig(
 settings = get_settings()
 
 if settings.env == "PROD":
+    import sentry_sdk
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
     sentry_sdk.init(
         dsn="https://7ca6442c26bbc22d5f6ce361630dd03e@o4507139041525760.ingest.de.sentry.io/4512292047552592",
         integrations=[
