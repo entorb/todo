@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).parent.parent.parent  # backend/ (local), ~/be/todo/ (PROD)
 
 # to distinguish PROD vs. Local
-PATH_ON_WEBSERVER = Path("/home/entorb/be/todo")
+PATH_ON_WEBSERVER = Path("/var/www/virtual/entorb/")
 
 
 class Settings(BaseSettings):
