@@ -11,7 +11,7 @@ from collections.abc import Callable
 from datetime import timedelta
 
 from sqlalchemy import ColumnElement, case, func, or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import selectinload  # type: ignore[attr-defined]
 from sqlmodel import Session, SQLModel, col, delete, select, update
 
@@ -47,7 +47,11 @@ def _clean_title(title: str) -> str:
 def init_db() -> None:
     """Create all tables if they don't exist, and run migrations."""
     engine = get_engine()
-    SQLModel.metadata.create_all(engine)
+    try:
+        SQLModel.metadata.create_all(engine)
+    except OperationalError:
+        # parallel gunicorn workers race on a fresh DB; the retry sees the tables
+        SQLModel.metadata.create_all(engine)
     _migrate()
 
 

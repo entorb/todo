@@ -25,7 +25,7 @@ export default function globalSetup() {
     cwd: "../backend",
     env: {
       ...process.env,
-      DB_PATH: "sqlite-e2e.db",
+      DB_PATH: "db-e2e.sqlite",
       JWT_SECRET_KEY: "e2e-secret-e2e-secret-e2e-secret-e2e",
     },
     stdio: "inherit",

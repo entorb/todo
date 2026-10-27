@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(min_length=32)
     jwt_algorithm: Literal["HS256"] = "HS256"
     jwt_expire_hours: int = 24 * 365
-    db_path: Path = BASE_DIR / "sqlite.db"
+    db_path: Path = BASE_DIR / "db.sqlite"
     env: Literal["PROD", "Local"] = "PROD" if PATH_ON_WEBSERVER.is_dir() else "Local"
 
     @property

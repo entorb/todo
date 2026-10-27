@@ -10,10 +10,9 @@ from app.core.config import get_settings
 
 
 def _set_sqlite_pragmas(dbapi_connection: object, _connection_record: object) -> None:
-    """Apply SQLite pragmas: WAL, busy_timeout, and foreign-key enforcement."""
+    """Apply SQLite pragmas: journal mode, busy_timeout, foreign keys."""
     cursor = dbapi_connection.cursor()  # type: ignore[union-attr]
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA journal_mode=DELETE")
     cursor.execute("PRAGMA busy_timeout=5000")
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
