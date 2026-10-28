@@ -1,6 +1,7 @@
 import os
 
 os.environ["JWT_SECRET_KEY"] = "test-secret-test-secret-test-secret-42"  # noqa: S105
+os.environ.setdefault("APP_ENV", "Local")
 
 from collections.abc import Iterator
 from pathlib import Path
