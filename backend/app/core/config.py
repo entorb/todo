@@ -9,9 +9,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).parent.parent.parent  # backend/ (local), ~/be/todo/ (PROD)
 
-# to distinguish PROD vs. Local
-PATH_ON_WEBSERVER = Path("/var/www/virtual/entorb/")
-
 
 class Settings(BaseSettings):
     """Typed settings, validated at startup."""
@@ -25,7 +22,8 @@ class Settings(BaseSettings):
     jwt_algorithm: Literal["HS256"] = "HS256"
     jwt_expire_hours: int = 24 * 365
     db_path: Path = BASE_DIR / "db.sqlite"
-    env: Literal["PROD", "Local"] = "PROD" if PATH_ON_WEBSERVER.is_dir() else "Local"
+    # unset defaults to PROD: fail safe
+    env: Literal["PROD", "Local"] = Field(default="PROD", validation_alias="APP_ENV")
 
     @property
     def cors_origins(self) -> list[str]:
