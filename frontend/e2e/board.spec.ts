@@ -1,15 +1,15 @@
-import { expect, test } from "@playwright/test"
+import { expect, test as it } from "@playwright/test"
 
 import { addColumn, login } from "./helpers.ts"
 
-test("create board, column, cards; complete; export", async ({ page, context }) => {
+it("create board, column, cards; complete; export", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"])
   await login(page)
 
   await page.getByRole("button", { name: "New Board" }).click()
   await page.getByLabel("Board Name").fill("Planning")
   await page.getByRole("button", { name: "Save" }).click()
-  await expect(page).toHaveURL(/todo\/b\/planning$/)
+  await expect(page).toHaveURL(/todo\/b\/planning$/u)
 
   await addColumn(page)
   const addCard = page.getByLabel("Add a card")

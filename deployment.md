@@ -8,7 +8,7 @@ Layout on webserver:
 ## Initial setup
 
 ```sh
-pip3.11 install --user gunicorn
+pip3.14 install --user gunicorn
 # uvloop httptools
 
 # secret for JWT signing
@@ -16,19 +16,19 @@ mkdir -p ~/be
 mkdir -p ~/be/todo
 mkdir -p ~/be/todo/app
 mkdir -p ~/be/todo/scripts
-python3.11 -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(32))" > ~/be/todo/.env
+python3.14 -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(32))" > ~/be/todo/.env
 ```
 
 Then run `./scripts/deploy.sh` locally and set the login secret of user 1:
 
 ```sh
-cd ~/be/todo && python3.11 -m scripts.set_user_secret 1
+cd ~/be/todo && python3.14 -m scripts.set_user_secret 1
 ```
 
 Share a board with another user (card access only), by board key and user name:
 
 ```sh
-cd ~/be/todo && python3.11 -m scripts.add_board_member s-week Torben
+cd ~/be/todo && python3.14 -m scripts.add_board_member s-week Torben
 ```
 
 ## Service

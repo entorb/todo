@@ -11,7 +11,7 @@ export function contrastColor(hexColor: string): "#222" | "#fff" {
   return luminance > 0.45 ? "#222" : "#fff"
 }
 
-const URL_PATTERN = /https?:\/\/[^\s<>"'\][{}|\\^`]+/
+const URL_PATTERN = /https?:\/\/[^\s<>"'\][{}|\\^`]+/u
 
 /** First http(s) URL in text, or null. */
 export function findUrl(text: string): string | null {
