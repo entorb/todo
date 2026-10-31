@@ -21,19 +21,19 @@ echo "### E2E tests"
 
 echo "## Frontend Build and Transfer"
 (cd frontend && pnpm run build)
-rsync -rhv --delete --no-perms frontend/dist/ entorb@entorb.net:html/todo/
+rsync -rhv --delete --no-perms frontend/dist/ entorb@mab.uberspace.de:html/todo/
 
 echo "## Backend"
 (cd backend && uv run --no-build python -m scripts.gen_requirements)
-rsync -hvz --no-perms backend/requirements.txt entorb@entorb.net:be/todo/
+rsync -hvz --no-perms backend/requirements.txt entorb@mab.uberspace.de:be/todo/
 # DO NOT sync the .env secret file
-rsync -rhvz --delete --delete-excluded --no-perms --exclude __pycache__ backend/app/ entorb@entorb.net:be/todo/app/
-rsync -rhvz --delete --delete-excluded --no-perms --exclude __pycache__ backend/scripts/ entorb@entorb.net:be/todo/scripts/
+rsync -rhvz --delete --delete-excluded --no-perms --exclude __pycache__ backend/app/ entorb@mab.uberspace.de:be/todo/app/
+rsync -rhvz --delete --delete-excluded --no-perms --exclude __pycache__ backend/scripts/ entorb@mab.uberspace.de:be/todo/scripts/
 
 echo "### Install packages"
-ssh entorb@entorb.net "pip3.11 install --user -r be/todo/requirements.txt > /dev/null"
+ssh entorb@mab.uberspace.de "pip3.14 install --user -r be/todo/requirements.txt > /dev/null"
 
 echo "### Restart fastapi"
-ssh entorb@entorb.net "supervisorctl restart fastapi-todo"
+ssh entorb@mab.uberspace.de "supervisorctl restart fastapi-todo"
 
 echo "## DONE"

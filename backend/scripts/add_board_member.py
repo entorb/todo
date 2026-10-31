@@ -1,9 +1,9 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3.14
 """
 Give a user card access to a board (no board/column management).
 
 ./scripts/add_board_member.py <board.key|id> <user.name|id>
-or: python3.11 -m scripts.add_board_member <board.key|id> <user.name|id>
+or: python3.14 -m scripts.add_board_member <board.key|id> <user.name|id>
 
 All-digit arguments are treated as ids.
 """

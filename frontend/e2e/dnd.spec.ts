@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, test } from "@playwright/test"
+import { expect, test as it, type Locator, type Page } from "@playwright/test"
 
 import { addColumn, login } from "./helpers.ts"
 
@@ -13,12 +13,12 @@ async function drag(page: Page, from: Locator, to: Locator) {
   await page.mouse.up()
 }
 
-test("drag card to other column persists", async ({ page }) => {
+it("drag card to other column persists", async ({ page }) => {
   await login(page)
   await page.getByRole("button", { name: "New Board" }).click()
   await page.getByLabel("Board Name").fill("Dnd")
   await page.getByRole("button", { name: "Save" }).click()
-  await expect(page).toHaveURL(/b\/dnd$/)
+  await expect(page).toHaveURL(/b\/dnd$/u)
 
   await addColumn(page)
   await addColumn(page)

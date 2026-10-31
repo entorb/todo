@@ -34,20 +34,7 @@ PY
   echo "uv pinned to $UV_VER"
 
   echo "### Python Version"
-  # upgrade to latest available 3.11 patch, then pin the exact version
-  uv python upgrade 3.11
-  UV_PY_VER=$(
-    D=$(mktemp -d)
-    cd "$D" || exit 1
-    "$(uv python find --no-project --managed-python 3.11)" -c "import sys; print('%d.%d.%d' % sys.version_info[:3])"
-    rm -rf "$D"
-  )
-  [ -n "$UV_PY_VER" ] || {
-    echo "ERROR: could not resolve Python version" >&2
-    exit 1
-  }
-  printf '%s\n' "$UV_PY_VER" >.python-version
-  echo "python pinned to $UV_PY_VER"
+  uv python upgrade
 
   echo "### Node and PNPM Versions"
   brew upgrade node@24
