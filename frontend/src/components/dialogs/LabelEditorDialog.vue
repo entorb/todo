@@ -15,7 +15,7 @@ const name = ref(props.label?.name ?? "")
 // eslint-disable-next-line vue/no-setup-props-reactivity-loss -- initial form value
 const color = ref(props.label?.color ?? "#cccccc")
 const error = ref<string | null>(null)
-const HEX_COLOR = /^#([\da-f]{3}){1,2}$/
+const HEX_COLOR = /^#([\da-f]{3}){1,2}$/u
 
 async function save() {
   const n = name.value.trim()
