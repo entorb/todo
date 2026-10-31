@@ -1,0 +1,16 @@
+{
+  // uv workspace: venv at repo root, package "app" lives in backend/
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  // match CLI pyright (scripts/chk_py_types.sh), strict flags untyped libs
+  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.exclude": [
+    "**/node_modules",
+    "**/.venv",
+    "**/.venv-box",
+    "**/.pnpm-store"
+  ],
+  "python.testing.pytestEnabled": true,
+  "python.testing.cwd": "${workspaceFolder}/backend",
+  "python.testing.pytestArgs": ["tests"]
+}
