@@ -4,19 +4,19 @@ Vue 3 + Quasar + Pinia + TypeScript, Vite base `/todo/`. Run commands from `fron
 
 ## Layout
 
-| Path | Content |
-| ---- | ------- |
-| `src/client/` | generated API client (`scripts/gen_api_for_vue.sh`) — DO NOT edit |
-| `src/services/apiClient.ts` | client config, `tokenManager` (localStorage), 401 handler, `errorMessage()` |
-| `src/config/env.ts` | validated env (`VITE_API_BASE_URL`) |
-| `src/router/index.ts` | routes `/` (boards), `/b/:key` (board), `/login`; auth guard |
-| `src/stores/auth.ts` | login / logout, user from JWT |
-| `src/stores/board.ts` | boards, current board, labels, bulk selection; all board mutations via `run()` |
-| `src/views/` | `BoardListView`, `BoardView`, `LoginView` |
-| `src/components/` | `BoardColumn`, `TodoCard`, `BulkBar`; drag & drop via `vue-draggable-plus` |
-| `src/components/dialogs/` | Quasar Dialog plugin components |
-| `src/utils/` | `color`, `jwt`, `clipboard` (pure, unit tested) |
-| `e2e/` | Playwright, `helpers.ts` `login(page)`, DB seeded in `global-setup.ts` |
+| Path                        | Content                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `src/client/`               | generated API client (`scripts/gen_api_for_vue.sh`) — DO NOT edit              |
+| `src/services/apiClient.ts` | client config, `tokenManager` (localStorage), 401 handler, `errorMessage()`    |
+| `src/config/env.ts`         | validated env (`VITE_API_BASE_URL`)                                            |
+| `src/router/index.ts`       | routes `/` (boards), `/b/:key` (board), `/login`; auth guard                   |
+| `src/stores/auth.ts`        | login / logout, user from JWT                                                  |
+| `src/stores/board.ts`       | boards, current board, labels, bulk selection; all board mutations via `run()` |
+| `src/views/`                | `BoardListView`, `BoardView`, `LoginView`                                      |
+| `src/components/`           | `BoardColumn`, `TodoCard`, `BulkBar`; drag & drop via `vue-draggable-plus`     |
+| `src/components/dialogs/`   | Quasar Dialog plugin components                                                |
+| `src/utils/`                | `color`, `jwt`, `clipboard` (pure, unit tested)                                |
+| `e2e/`                      | Playwright, `helpers.ts` `login(page)`, DB seeded in `global-setup.ts`         |
 
 ## API calls
 
@@ -49,7 +49,7 @@ Modern Vue 3 + TypeScript best practices.
 
 ```typescript
 // ✅ DO
-store.inputText = 'new value'
+store.inputText = "new value"
 
 // ❌ DON'T
 function setInputText(text: string) {
@@ -60,12 +60,12 @@ function setInputText(text: string) {
 **Return minimal interface:**
 
 ```typescript
-export const useTextStore = defineStore('text', () => {
-  const inputText = ref('')
-  const outputText = ref('')
+export const useTextStore = defineStore("text", () => {
+  const inputText = ref("")
+  const outputText = ref("")
 
   function clearOutput() {
-    outputText.value = ''
+    outputText.value = ""
     error.value = null
   }
 
@@ -87,7 +87,7 @@ try {
 }
 
 // ❌ DON'T
-console.error('Failed:', err) // No logging in catch
+console.error("Failed:", err) // No logging in catch
 ```
 
 ## Nullability
