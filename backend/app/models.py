@@ -109,7 +109,7 @@ class Board(SQLModel, table=True):
         cascade_delete=True,
         sa_relationship_kwargs={"order_by": "Column.position"},
     )
-    members: list["BoardMember"] = Relationship(cascade_delete=True)
+    members: list[BoardMember] = Relationship(cascade_delete=True)
 
 
 class BoardMember(SQLModel, table=True):

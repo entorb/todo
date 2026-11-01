@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, status
 
 from app import crud, export_service
 from app.api.deps import CurrentUser, SessionDep
@@ -61,20 +61,18 @@ def update_board(
 
 
 @router.delete("/{board_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_board(board_id: int, session: SessionDep, user: CurrentUser) -> Response:
+def delete_board(board_id: int, session: SessionDep, user: CurrentUser) -> None:
     """Delete board incl. columns and cards."""
     crud.delete_board(session, crud.get_board(session, user.user_id, board_id))
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/{board_id}/columns/order", status_code=status.HTTP_204_NO_CONTENT)
 def reorder_columns(
     board_id: int, data: IdList, session: SessionDep, user: CurrentUser
-) -> Response:
+) -> None:
     """Set column order."""
     board = crud.get_board(session, user.user_id, board_id)
     crud.update_column_order(session, board, data.ids)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{board_id}/sort", status_code=status.HTTP_204_NO_CONTENT)
@@ -83,10 +81,9 @@ def sort_board(
     by: Literal["prio", "date"],
     session: SessionDep,
     user: CurrentUser,
-) -> Response:
+) -> None:
     """Sort cards of all columns by prio/label/title or by date."""
     crud.sort_cards(session, crud.get_board(session, user.user_id, board_id), by)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{board_id}/export")

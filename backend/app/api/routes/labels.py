@@ -1,6 +1,6 @@
 """Label endpoints. Labels are global, shared by all boards."""
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, status
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
@@ -37,7 +37,6 @@ def update_label(
 
 
 @router.delete("/{label_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_label(label_id: int, session: SessionDep, _: CurrentUser) -> Response:
+def delete_label(label_id: int, session: SessionDep, _: CurrentUser) -> None:
     """Delete a label, cards lose it."""
     crud.delete_label(session, crud.get_label(session, label_id))
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
