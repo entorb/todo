@@ -1,5 +1,6 @@
-fix = true       # auto-fix findings
-line-length = 88 # same as Black
+fix = true               # auto-fix findings
+line-length = 88         # same as Black
+target-version = "py314" # Python 3.14
 
 extend-exclude = ["frontend"]
 
@@ -25,6 +26,9 @@ extend-ignore = [
   "PGH003", # blanket-type-ignore
   "RET504", # unnecessary-assign
   "S101",   # use of asserts
+  "TC001",  # pydantic/SQLModel/FastAPI evaluate annotations at runtime
+  "TC002",
+  "TC003",
   "T201",   # print
   "TD002",  # missing-todo-author
   "TD003",  # missing-todo-link
