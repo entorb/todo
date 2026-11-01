@@ -1,6 +1,7 @@
 """Password hashing and JWT handling."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import bcrypt
 import jwt
@@ -37,7 +38,7 @@ def create_access_token(
     )
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str) -> dict[str, Any]:
     """Decode and verify JWT. Raises jwt.InvalidTokenError subclasses."""
     settings = get_settings()
     return jwt.decode(

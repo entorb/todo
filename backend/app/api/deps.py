@@ -22,7 +22,7 @@ limiter = Limiter(key_func=get_remote_address, enabled=get_settings().env == "PR
 security = HTTPBearer()
 
 
-def get_current_user(
+async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
 ) -> UserInfo:
     """Validate the Bearer JWT and return the user."""

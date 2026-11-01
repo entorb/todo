@@ -17,7 +17,7 @@ chdir = app_path
 
 # SQLite: few workers are enough
 workers = 2
-worker_class = "uvicorn.workers.UvicornWorker"
+worker_class = "uvicorn_worker.UvicornWorker"
 
 # trust X-Forwarded-For only from the local reverse proxy,
 # required for the per-IP login rate limit

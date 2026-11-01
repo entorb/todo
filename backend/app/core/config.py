@@ -1,6 +1,6 @@
 """App settings, read from environment / backend/.env."""
 
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 from typing import Literal
 
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
         return ["http://localhost:4173", "http://localhost:5173"]
 
 
-@lru_cache
+@cache
 def get_settings() -> Settings:
     """Return cached settings singleton."""
     return Settings()  # type: ignore[call-arg]

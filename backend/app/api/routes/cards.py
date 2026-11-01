@@ -1,6 +1,6 @@
 """Card endpoints."""
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, status
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
@@ -26,13 +26,12 @@ def create_card(data: CardCreate, session: SessionDep, user: CurrentUser) -> Car
 @router.patch("/bulk", status_code=status.HTTP_204_NO_CONTENT)
 def bulk_update_cards(
     data: CardBulkUpdate, session: SessionDep, user: CurrentUser
-) -> Response:
+) -> None:
     """Set revive / prio / label on many cards. Explicit null unsets prio/label."""
     crud.check_cards_owned(session, user.user_id, data.ids)
     values = data.model_dump(exclude_unset=True, exclude={"ids"})
     _check_label(session, values)
     crud.bulk_update_cards(session, data.ids, values)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/{card_id}")
@@ -70,7 +69,6 @@ def copy_card(
 
 
 @router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_card(card_id: int, session: SessionDep, user: CurrentUser) -> Response:
+def delete_card(card_id: int, session: SessionDep, user: CurrentUser) -> None:
     """Delete a card."""
     crud.delete_card(session, crud.get_card(session, user.user_id, card_id))
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

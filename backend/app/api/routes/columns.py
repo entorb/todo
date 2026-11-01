@@ -1,6 +1,6 @@
 """Column endpoints."""
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, status
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep
@@ -30,7 +30,6 @@ def update_column(
 
 
 @router.delete("/{column_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_column(column_id: int, session: SessionDep, user: CurrentUser) -> Response:
+def delete_column(column_id: int, session: SessionDep, user: CurrentUser) -> None:
     """Delete a column incl. its cards."""
     crud.delete_column(session, crud.get_column(session, user.user_id, column_id))
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
