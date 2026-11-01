@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app import crud
 from app.api.deps import limiter
@@ -43,12 +44,29 @@ app = FastAPI(
     title="Todo API",
     description="Kanban todo boards",
     version="0.1.0",
-    # same root for prod and dev to make debugging easier
-    root_path="/be/todo",
     lifespan=lifespan,
     # clean operation ids -> clean names in generated TS client
     generate_unique_id_function=lambda route: route.name,
 )
+
+
+class RootPathMiddleware:
+    """
+    Set root_path like deprecated FastAPI(root_path=...).
+
+    Not uvicorn --root-path: that prepends it to path, but proxy already keeps prefix.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:  # noqa: D107
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:  # noqa: D102
+        # same root for prod and dev to make debugging easier
+        scope["root_path"] = "/be/todo"
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(RootPathMiddleware)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
