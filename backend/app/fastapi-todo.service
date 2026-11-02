@@ -1,0 +1,11 @@
+[Install]
+WantedBy=default.target
+
+[Service]
+Environment="APP_ENV=PROD"
+WorkingDirectory=/home/entorb8/be/todo
+# plain uvicorn (no gunicorn master saves RAM); systemd restarts it after --limit-max-requests
+# --forwarded-allow-ips: trust X-Forwarded-For only from local reverse proxy, required for per-IP login rate limit
+ExecStart=python3.14 -m uvicorn app.main:app --host 0.0.0.0 --port 9003 --forwarded-allow-ips 127.0.0.1,::1 --limit-max-requests 1000 --timeout-graceful-shutdown 30
+Restart=always
+RestartSec=5

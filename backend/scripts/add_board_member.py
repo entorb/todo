@@ -17,13 +17,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import crud
 from app.core.db import get_engine
 from app.models import Board, User
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 
 def main() -> None:
     """Add user (name or id) as member of board (key or id)."""
     if len(sys.argv) != 3:  # noqa: PLR2004
         print(__doc__)
+        crud.init_db()
+        with Session(get_engine()) as s:
+            print("Boards (id, key):")
+            for b in s.exec(select(Board).order_by(col(Board.id))):
+                print(f"  {b.id}\t{b.key}")
+            print("Users (id, name):")
+            for u in s.exec(select(User).order_by(col(User.id))):
+                print(f"  {u.id}\t{u.name}")
         sys.exit(1)
     board_arg, user_arg = sys.argv[1].strip(), sys.argv[2].strip()
     crud.init_db()
