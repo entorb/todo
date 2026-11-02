@@ -103,7 +103,7 @@ Every board / column / card access goes through `crud.get_board|get_column|get_c
 
 ## Deployment
 
-Target: Uberspace. Script: `scripts/deploy.sh`. Prod under gunicorn, see [deployment.md](deployment.md).
+Target: Uberspace. Script: `scripts/deploy.sh`. Prod under plain uvicorn via systemd, see [deployment.md](deployment.md).
 
 ## SonarCloud
 

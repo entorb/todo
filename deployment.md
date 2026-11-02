@@ -1,4 +1,4 @@
-# How to deploy to Uberspace / entorb.net
+# How to deploy to Uberspace U8 / entorb.net
 
 Layout on webserver:
 
@@ -7,10 +7,10 @@ Layout on webserver:
 
 ## Initial setup
 
-```sh
-pip3.14 install --user gunicorn
-# uvloop httptools
+Plain uvicorn, no gunicorn (few users, saves RAM). Installed via `requirements.txt` by `scripts/deploy.sh`.
+Logs go to journald.
 
+```sh
 # secret for JWT signing
 mkdir -p ~/be
 mkdir -p ~/be/todo
@@ -33,17 +33,26 @@ cd ~/be/todo && python3.14 -m scripts.add_board_member s-week Torben
 
 ## Service
 
+see [fastapi-todo.service](backend/app/fastapi-todo.service)
+
 ```sh
-cp ~/be/todo/app/todo-fastapi.ini ~/etc/services.d/
-supervisorctl reread
-supervisorctl update
+# update services (after changing the .service file)
+cp ~/be/todo/app/fastapi-todo.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now fastapi-todo
+# restart
+systemctl --user restart fastapi-todo
+# status
+systemctl --user status fastapi-todo
+# logs
+journalctl --user -u fastapi-todo -f
 ```
 
 ## Register backend
 
 ```sh
+uberspace web backend add /be/todo port 9003
 uberspace web backend list
-uberspace web backend set be/todo --http --port 9003
 ```
 
-The login rate limit uses `X-Forwarded-For`, trusted only from `127.0.0.1` (see `forwarded_allow_ips` in [gunicorn_conf.py](backend/app/gunicorn_conf.py)). Verify in `~/be/todo/access.log` that real client IPs show up.
+The login rate limit uses `X-Forwarded-For`, trusted only from `127.0.0.1,::1` (see `--forwarded-allow-ips` in [fastapi-todo.service](backend/app/fastapi-todo.service)). Verify in `journalctl --user -u fastapi-todo` that real client IPs show up.
