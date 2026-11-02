@@ -10,6 +10,7 @@ entorb
 eslintcache
 gensalt
 hashpw
+journalctl
 knip
 korrekturleser
 loglevel
@@ -24,6 +25,7 @@ rrggbb
 rumdl
 selectinload
 slowapi
+sonarcloud
 sonarqube
 startsecs
 supervisorctl
