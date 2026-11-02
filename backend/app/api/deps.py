@@ -16,7 +16,7 @@ from app.models import UserInfo
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-# client IP from X-Forwarded-For, requires uvicorn/gunicorn proxy headers
+# client IP from X-Forwarded-For, requires uvicorn --forwarded-allow-ips
 limiter = Limiter(key_func=get_remote_address, enabled=get_settings().env == "PROD")
 
 security = HTTPBearer()

@@ -23,12 +23,18 @@ settings = get_settings()
 
 if settings.env == "PROD":
     import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
 
     sentry_sdk.init(
         dsn="https://7ca6442c26bbc22d5f6ce361630dd03e@o4507139041525760.ingest.de.sentry.io/4512292047552592",
+        # auto integrations import every installed SDK at startup -> RAM
+        auto_enabling_integrations=False,
         integrations=[
             LoggingIntegration(capture_sentry_logs=True),
+            StarletteIntegration(),
+            FastApiIntegration(),
         ],
     )
 
