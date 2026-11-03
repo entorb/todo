@@ -123,13 +123,13 @@ const allToolbarActions = [
   {
     label: "Sort by prio, label, title",
     icon: "swap_vert",
-    ownerOnly: true,
+    ownerOnly: false,
     run: () => store.sortCards("prio"),
   },
   {
     label: "Sort by date",
     icon: "calendar_month",
-    ownerOnly: true,
+    ownerOnly: false,
     run: () => store.sortCards("date"),
   },
   {
@@ -138,11 +138,20 @@ const allToolbarActions = [
     ownerOnly: true,
     run: () => openDialog(ExportDialog),
   },
-  { label: "Sync from server", icon: "sync", ownerOnly: false, run: () => store.refresh() },
 ]
 const toolbarActions = computed(() =>
   allToolbarActions.filter((a) => isOwner.value || !a.ownerOnly),
 )
+
+function addColumn() {
+  const b = store.board
+  if (b == null) return
+  $q.dialog({
+    title: "Add column",
+    prompt: { model: "", type: "text", label: "Name (optional)" },
+    cancel: true,
+  }).onOk((name: string) => store.addColumn(b.id, name.trim() || undefined))
+}
 
 function manageLabels() {
   $q.dialog({ component: ManageLabelsDialog }).onDismiss(() => store.refresh())
@@ -179,6 +188,18 @@ async function logout() {
         >
           {{ store.board.name }}
         </h5>
+        <q-btn
+          type="button"
+          flat
+          round
+          dense
+          class="q-ml-sm text-white"
+          icon="sync"
+          aria-label="Sync from server"
+          @click="store.refresh()"
+        >
+          <q-tooltip>Sync from server</q-tooltip>
+        </q-btn>
         <q-space />
         <div class="row no-wrap text-white">
           <q-btn
@@ -242,14 +263,20 @@ async function logout() {
                   class="xs"
                   @click="a.run"
                 >
+                  <q-item-section avatar>
+                    <q-icon :name="a.icon" />
+                  </q-item-section>
                   <q-item-section>{{ a.label }}</q-item-section>
                 </q-item>
                 <q-separator class="xs" />
                 <q-item
                   v-if="isOwner"
                   clickable
-                  @click="store.board != null && store.addColumn(store.board.id)"
+                  @click="addColumn"
                 >
+                  <q-item-section avatar>
+                    <q-icon name="view_column" />
+                  </q-item-section>
                   <q-item-section>Add column</q-item-section>
                 </q-item>
                 <q-item
@@ -257,25 +284,37 @@ async function logout() {
                   clickable
                   @click="openBoardDialog(true)"
                 >
+                  <q-item-section avatar>
+                    <q-icon name="edit" />
+                  </q-item-section>
                   <q-item-section>Rename Board</q-item-section>
                 </q-item>
                 <q-item
                   clickable
                   @click="openBoardDialog(false)"
                 >
+                  <q-item-section avatar>
+                    <q-icon name="add" />
+                  </q-item-section>
                   <q-item-section>New Board</q-item-section>
                 </q-item>
                 <q-item
                   clickable
                   :to="{ name: 'boards' }"
                 >
-                  <q-item-section>All Boards</q-item-section>
+                  <q-item-section avatar>
+                    <q-icon name="dashboard" />
+                  </q-item-section>
+                  <q-item-section>Switch Board</q-item-section>
                 </q-item>
                 <q-separator />
                 <q-item
                   clickable
                   @click="manageLabels"
                 >
+                  <q-item-section avatar>
+                    <q-icon name="label" />
+                  </q-item-section>
                   <q-item-section>Manage Labels</q-item-section>
                 </q-item>
                 <template v-if="isOwner">
@@ -284,6 +323,9 @@ async function logout() {
                     clickable
                     @click="openDialog(DeleteCardsDialog)"
                   >
+                    <q-item-section avatar>
+                      <q-icon name="delete_sweep" />
+                    </q-item-section>
                     <q-item-section>Delete Cards</q-item-section>
                   </q-item>
                   <q-item
@@ -291,6 +333,9 @@ async function logout() {
                     class="text-negative"
                     @click="confirmDeleteBoard"
                   >
+                    <q-item-section avatar>
+                      <q-icon name="delete_forever" />
+                    </q-item-section>
                     <q-item-section>Delete Board</q-item-section>
                   </q-item>
                 </template>
@@ -299,6 +344,9 @@ async function logout() {
                   clickable
                   @click="logout"
                 >
+                  <q-item-section avatar>
+                    <q-icon name="logout" />
+                  </q-item-section>
                   <q-item-section>Logout {{ authStore.user?.user_name }}</q-item-section>
                 </q-item>
               </q-list>
@@ -323,7 +371,7 @@ async function logout() {
           text-color="primary"
           icon="view_column"
           label="Add first column"
-          @click="store.addColumn(store.board.id)"
+          @click="addColumn"
         />
       </div>
       <VueDraggable

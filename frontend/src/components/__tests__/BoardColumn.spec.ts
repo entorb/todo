@@ -5,6 +5,7 @@ import { VueDraggable } from "vue-draggable-plus"
 import { mountApp, seedBoard } from "@/__tests__/mount.ts"
 import { createCard, moveCard, updateColumn } from "@/client/index.ts"
 import BoardColumn from "@/components/BoardColumn.vue"
+import { useBoardStore } from "@/stores/board.ts"
 
 vi.mock("@/client/index.ts")
 
@@ -32,6 +33,26 @@ describe("BoardColumn", () => {
     const { wrapper } = setup()
     expect(wrapper.findAll("[data-card-id]")).toHaveLength(2)
     expect(wrapper.text()).toContain("1/2")
+    expect((wrapper.vm as unknown as { labelStats: unknown }).labelStats).toEqual([])
+  })
+
+  it("groups closed/total by label, unlabeled last", () => {
+    const column = {
+      ...COLUMN,
+      cards: [
+        { id: 1, column_id: 7, title: "a", date_completed: null },
+        { id: 2, column_id: 7, title: "b", date_completed: "2026-01-01", label_id: 3 },
+        { id: 3, column_id: 7, title: "c", date_completed: null, label_id: 3 },
+      ],
+    }
+    seedBoard({ id: 1, key: "b", is_owner: true, columns: [column] })
+    useBoardStore().labels = [{ id: 3, name: "Work", color: "#f00" }]
+    const { wrapper } = mountApp(BoardColumn, { column })
+    const vm = wrapper.vm as unknown as { labelStats: unknown }
+    expect(vm.labelStats).toEqual([
+      { name: "Work", closed: 1, total: 2 },
+      { name: "no label", closed: 0, total: 1 },
+    ])
   })
 
   it("owner can rename, non-owner cannot", async () => {

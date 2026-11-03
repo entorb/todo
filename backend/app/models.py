@@ -228,9 +228,10 @@ class BoardUpdate(SQLModel):
 
 
 class ColumnCreate(SQLModel):
-    """Create a column at the end of a board."""
+    """Create a column at the end of a board, default name if none given."""
 
     board_id: int
+    name: str | None = Field(default=None, min_length=1)
 
 
 class ColumnUpdate(SQLModel):

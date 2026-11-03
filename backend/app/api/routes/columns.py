@@ -15,7 +15,7 @@ def create_column(
 ) -> ColumnPublic:
     """Create a column with unique default name at the end of the board."""
     crud.get_board(session, user.user_id, data.board_id)
-    column = crud.create_column(session, data.board_id)
+    column = crud.create_column(session, data.board_id, data.name)
     return ColumnPublic.model_validate(column, from_attributes=True)
 
 

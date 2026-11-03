@@ -82,8 +82,9 @@ def sort_board(
     session: SessionDep,
     user: CurrentUser,
 ) -> None:
-    """Sort cards of all columns by prio/label/title or by date."""
-    crud.sort_cards(session, crud.get_board(session, user.user_id, board_id), by)
+    """Sort cards of all columns by prio/label/title or by date, members allowed."""
+    board = crud.get_board(session, user.user_id, board_id, owner_only=False)
+    crud.sort_cards(session, board, by)
 
 
 @router.get("/{board_id}/export")

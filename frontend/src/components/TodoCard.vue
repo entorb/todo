@@ -33,6 +33,7 @@ const cardStyle = computed(() => {
     return {
       background: label.value.color,
       color: contrastColor(label.value.color),
+      "--label-bg": label.value.color,
       opacity: isCompleted.value ? 0.45 : 1,
     }
   }
@@ -133,7 +134,8 @@ const prioOptions = computed(() =>
       :model-value="isCompleted"
       dense
       color="green"
-      :style="{ opacity: isCompleted ? 1 : 0.6 }"
+      :class="{ 'on-label': label }"
+      :style="{ opacity: isCompleted || label ? 1 : 0.6 }"
       aria-label="Completed"
       @update:model-value="toggleCompleted"
     />
@@ -214,6 +216,9 @@ const prioOptions = computed(() =>
               clickable
               @click="setRevive(!card.is_revive)"
             >
+              <q-item-section avatar>
+                <q-icon name="repeat" />
+              </q-item-section>
               <q-item-section>{{ card.is_revive ? "Unset Revive" : "Set Revive" }}</q-item-section>
             </q-item>
             <q-item
@@ -222,6 +227,9 @@ const prioOptions = computed(() =>
               clickable
               @click="setPrio(o.prio)"
             >
+              <q-item-section avatar>
+                <q-icon :name="o.icon" />
+              </q-item-section>
               <q-item-section>{{ o.label }}</q-item-section>
             </q-item>
             <q-separator />
@@ -229,6 +237,9 @@ const prioOptions = computed(() =>
               clickable
               @click="pickLabel"
             >
+              <q-item-section avatar>
+                <q-icon name="label" />
+              </q-item-section>
               <q-item-section>Set label…</q-item-section>
             </q-item>
             <q-separator />
@@ -236,12 +247,18 @@ const prioOptions = computed(() =>
               clickable
               @click="moveOrCopy('move')"
             >
+              <q-item-section avatar>
+                <q-icon name="drive_file_move" />
+              </q-item-section>
               <q-item-section>Move to…</q-item-section>
             </q-item>
             <q-item
               clickable
               @click="moveOrCopy('copy')"
             >
+              <q-item-section avatar>
+                <q-icon name="content_copy" />
+              </q-item-section>
               <q-item-section>Copy to…</q-item-section>
             </q-item>
             <q-separator />
@@ -250,6 +267,9 @@ const prioOptions = computed(() =>
               class="text-negative"
               @click="store.removeCard(card.id)"
             >
+              <q-item-section avatar>
+                <q-icon name="delete_outline" />
+              </q-item-section>
               <q-item-section>Delete</q-item-section>
             </q-item>
           </q-list>
@@ -260,6 +280,13 @@ const prioOptions = computed(() =>
 </template>
 
 <style scoped>
+/* labeled card: checkbox in card text color, check mark in label color (green on green is invisible) */
+.on-label :deep(.q-checkbox__inner) {
+  color: inherit !important;
+}
+.on-label :deep(.q-checkbox__svg) {
+  color: var(--label-bg);
+}
 .todo-card {
   position: relative;
   flex-shrink: 0; /* grow with wrapped text, list scrolls instead */
