@@ -218,7 +218,7 @@ export const reorderColumns = <ThrowOnError extends boolean = true>(
 /**
  * Sort Board
  *
- * Sort cards of all columns by prio/label/title or by date.
+ * Sort cards of all columns by prio/label/title or by date, members allowed.
  */
 export const sortBoard = <ThrowOnError extends boolean = true>(
   options: Options<SortBoardData, ThrowOnError>,

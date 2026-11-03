@@ -87,6 +87,9 @@ class TestColumn:
             crud.update_column_name(session, c2, " New Column ")
         crud.update_column_name(session, c2, " Done ")
         assert c2.name == "Done"
+        assert crud.create_column(session, board.id, " Todo ").name == "Todo"
+        with pytest.raises(crud.ConflictError, match="already exists"):
+            crud.create_column(session, board.id, "Done")
 
     def test_order(self, session):
         board = _board(session)

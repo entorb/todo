@@ -27,6 +27,24 @@ const cards = computed({
   set: (value: CardPublic[]) => store.setCards(props.column.id, value),
 })
 const closedCount = computed(() => cards.value.filter((c) => c.date_completed != null).length)
+/** closed/total per label, unlabeled last, empty if no card has a label */
+const labelStats = computed(() => {
+  const stats = new Map<number | null, { name: string; closed: number; total: number }>()
+  for (const c of cards.value) {
+    const s = stats.get(c.label_id ?? null) ?? {
+      name: (c.label_id != null && store.labelById.get(c.label_id)?.name) || "no label",
+      closed: 0,
+      total: 0,
+    }
+    s.total++
+    if (c.date_completed != null) s.closed++
+    stats.set(c.label_id ?? null, s)
+  }
+  const unlabeled = stats.get(null)
+  stats.delete(null)
+  if (stats.size === 0) return []
+  return unlabeled == null ? [...stats.values()] : [...stats.values(), unlabeled]
+})
 const addInput = ref<{ focus: () => void } | null>(null)
 
 function revertName(event: KeyboardEvent) {
@@ -99,9 +117,28 @@ function onCardDrop(event: DraggableEvent) {
         color="blue-grey-3"
         text-color="blue-grey-10"
         class="q-mr-xs"
+        :class="{ 'cursor-pointer': labelStats.length > 0 }"
         :label="`${closedCount}/${cards.length}`"
       >
-        <q-tooltip>closed / total</q-tooltip>
+        <!-- tooltip on hover, menu on tap (touch has no hover) -->
+        <q-tooltip v-if="labelStats.length > 0 && !$q.platform.has.touch">
+          <div
+            v-for="(s, i) in labelStats"
+            :key="i"
+          >
+            {{ s.name }}: {{ s.closed }}/{{ s.total }}
+          </div>
+        </q-tooltip>
+        <q-menu v-else-if="labelStats.length > 0">
+          <q-list dense>
+            <q-item
+              v-for="(s, i) in labelStats"
+              :key="i"
+            >
+              <q-item-section>{{ s.name }}: {{ s.closed }}/{{ s.total }}</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
       </q-badge>
       <q-btn
         v-if="isOwner"

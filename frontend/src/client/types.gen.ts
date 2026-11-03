@@ -227,13 +227,17 @@ export type CardUpdate = {
 /**
  * ColumnCreate
  *
- * Create a column at the end of a board.
+ * Create a column at the end of a board, default name if none given.
  */
 export type ColumnCreate = {
   /**
    * Board Id
    */
   board_id: number
+  /**
+   * Name
+   */
+  name?: string | null
 }
 
 /**

@@ -71,8 +71,8 @@ export const useBoardStore = defineStore("board", () => {
 
   // columns
 
-  async function addColumn(boardId: number) {
-    return await run(async () => createColumn({ body: { board_id: boardId } }))
+  async function addColumn(boardId: number, name?: string) {
+    return await run(async () => createColumn({ body: { board_id: boardId, name } }))
   }
 
   async function renameColumn(columnId: number, name: string) {

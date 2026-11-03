@@ -105,14 +105,16 @@ describe("BoardView", () => {
     await flushPromises()
     expect(member.find('[aria-label="Export"]').exists()).toBe(false)
     expect(member.find('[aria-label="Sync from server"]').exists()).toBe(true)
+    expect(member.find('[aria-label="Sort by date"]').exists()).toBe(true)
   })
 
   it("empty board offers first column", async () => {
     vi.mocked(getBoard).mockResolvedValue({ data: board(true, []) } as never)
     const { wrapper } = mountApp(BoardView, { boardKey: "a" })
     await flushPromises()
+    dialogOk(wrapper.vm.$q, " Todo ")
     await button(wrapper, "Add first column").trigger("click")
-    expect(createColumn).toHaveBeenCalledWith({ body: { board_id: 1 } })
+    expect(createColumn).toHaveBeenCalledWith({ body: { board_id: 1, name: "Todo" } })
   })
 
   it("unknown board redirects to board list", async () => {

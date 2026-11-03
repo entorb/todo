@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test"
+import { expect, type Page } from "@playwright/test"
 
 export async function login(page: Page) {
   await page.goto("login")
@@ -7,8 +7,10 @@ export async function login(page: Page) {
   await page.waitForURL(/todo\/$/u)
 }
 
-/** "Add column" lives in the board's 3-dot menu. */
+/** "Add column" lives in the board's 3-dot menu, empty name → default name. */
 export async function addColumn(page: Page) {
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByText("Add column", { exact: true }).click()
+  await page.getByRole("button", { name: "OK" }).click()
+  await expect(page.getByRole("dialog")).toBeHidden() // fading backdrop would swallow drags
 }

@@ -69,7 +69,6 @@ def test_other_user_gets_404(
         ("GET", "/api/boards/plan", None),
         ("PATCH", f"/api/boards/{board_id}", {"name": "x"}),
         ("DELETE", f"/api/boards/{board_id}", None),
-        ("POST", f"/api/boards/{board_id}/sort?by=date", None),
         ("GET", f"/api/boards/{board_id}/export", None),
         ("DELETE", f"/api/boards/{board_id}/cards?mode=all", None),
         ("PUT", f"/api/boards/{board_id}/columns/order", {"ids": [col_id]}),
@@ -154,13 +153,13 @@ def test_member_card_actions_only(
         ("POST", f"/api/cards/{card_id}/move", {"column_id": col_id}),
         ("POST", f"/api/cards/{card_id}/copy", {"column_id": col_id}),
         ("DELETE", f"/api/cards/{card_id}", None),
+        ("POST", f"/api/boards/{board_id}/sort?by=date", None),
     ]:
         r = client.request(method, url, json=body, headers=m)
         assert r.status_code < 300, (method, url, r.status_code)
     for method, url, body in [
         ("PATCH", f"/api/boards/{board_id}", {"name": "x"}),
         ("DELETE", f"/api/boards/{board_id}", None),
-        ("POST", f"/api/boards/{board_id}/sort?by=date", None),
         ("GET", f"/api/boards/{board_id}/export", None),
         ("GET", f"/api/boards/{board_id}/cards/deletable?mode=all", None),
         ("DELETE", f"/api/boards/{board_id}/cards?mode=all", None),

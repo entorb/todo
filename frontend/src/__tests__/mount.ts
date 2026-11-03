@@ -93,9 +93,10 @@ export function seedBoard(board: object) {
 export async function menuItem(trigger: DOMWrapper<Element>, label: string) {
   await trigger.trigger("click")
   await flushPromises()
-  const item = [...document.body.querySelectorAll(".q-menu .q-item")].find(
-    (e) => e.textContent?.trim() === label,
-  )
+  // main section only: icon ligature text would be part of the item's textContent
+  const item = [...document.body.querySelectorAll(".q-menu .q-item__section--main")]
+    .find((e) => e.textContent?.trim() === label)
+    ?.closest(".q-item")
   if (!(item instanceof HTMLElement)) throw new Error(`menu item ${label} not found`)
   item.click()
   await flushPromises()

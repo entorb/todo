@@ -267,11 +267,15 @@ def _get_columns(s: Session, board_id: int) -> list[Column]:
     )
 
 
-def create_column(s: Session, board_id: int) -> Column:
-    """Create a new column with unique default name at end."""
+def create_column(s: Session, board_id: int, name: str | None = None) -> Column:
+    """Create a new column at end, unique default name if none given."""
     existing = _get_columns(s, board_id)
-    name = "New Column"
     names = {c.name for c in existing}
+    name = (name or "").strip()
+    if name and name in names:
+        msg = f"Column name '{name}' already exists"
+        raise ConflictError(msg)
+    name = name or "New Column"
     if name in names:
         i = 2
         while f"{name} {i}" in names:
