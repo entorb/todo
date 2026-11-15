@@ -1,4 +1,5 @@
 [tool.uv]
+add-bounds = "exact"
 required-version = "~=0.13.6"
 exclude-newer = "7 days"
 
