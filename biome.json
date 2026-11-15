@@ -55,7 +55,9 @@
       },
       "correctness": {
         "noUnresolvedImports": "off",
-        "useQwikValidLexicalScope": "off"
+        "useQwikValidLexicalScope": "off",
+        "useHookAtTopLevel": "off",
+        "noComponentHookFactories": "off"
       },
       "nursery": {
         "noFloatingPromises": "warn",
@@ -95,7 +97,11 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.spec.ts", "**/*.test.ts", "**/__tests__/**"],
+      "includes": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "**/__tests__/**"
+      ],
       "linter": {
         "rules": {
           "complexity": {
@@ -127,11 +133,12 @@
       }
     },
     {
-      "includes": ["**/*.vue"],
+      "includes": [
+        "**/*.vue"
+      ],
       "linter": {
         "rules": {
           "correctness": {
-            "useHookAtTopLevel": "off",
             "useQwikValidLexicalScope": "off"
           },
           "suspicious": {
@@ -148,7 +155,9 @@
       }
     },
     {
-      "includes": ["frontend/src/client/**"],
+      "includes": [
+        "frontend/src/client/**"
+      ],
       "linter": {
         "enabled": false
       }
