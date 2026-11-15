@@ -97,11 +97,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "**/__tests__/**"
-      ],
+      "includes": ["**/*.spec.ts", "**/*.test.ts", "**/__tests__/**"],
       "linter": {
         "rules": {
           "complexity": {
@@ -133,9 +129,7 @@
       }
     },
     {
-      "includes": [
-        "**/*.vue"
-      ],
+      "includes": ["**/*.vue"],
       "linter": {
         "rules": {
           "correctness": {
@@ -155,9 +149,7 @@
       }
     },
     {
-      "includes": [
-        "frontend/src/client/**"
-      ],
+      "includes": ["frontend/src/client/**"],
       "linter": {
         "enabled": false
       }

@@ -3,6 +3,7 @@ import { Quasar } from "quasar"
 import { createApp } from "vue"
 
 import App from "./App.vue"
+import "./styles/global.css"
 import quasarConfig from "./plugins/quasar.ts"
 import router from "./router/index.ts"
 import { installUnauthorizedHandler } from "./services/apiClient.ts"

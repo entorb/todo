@@ -84,7 +84,6 @@ export function button(
 
 /** Set current board, board reload (store.refresh) returns it again. Needs mocked client. */
 export function seedBoard(board: object) {
-  // biome-ignore lint/correctness/useHookAtTopLevel: pinia store, not a React hook
   useBoardStore().board = board as never
   vi.mocked(getBoard).mockResolvedValue({ data: board } as never)
 }

@@ -4,12 +4,7 @@
   "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
   // match CLI pyright (scripts/chk_py_types.sh), strict flags untyped libs
   "python.analysis.typeCheckingMode": "standard",
-  "python.analysis.exclude": [
-    "**/node_modules",
-    "**/.venv",
-    "**/.venv-box",
-    "**/.pnpm-store"
-  ],
+  "python.analysis.exclude": ["**/node_modules", "**/.venv", "**/.venv-box", "**/.pnpm-store"],
   "python.testing.pytestEnabled": true,
   "python.testing.cwd": "${workspaceFolder}/backend",
   "python.testing.pytestArgs": ["tests"]
