@@ -127,10 +127,7 @@ echo "### run_e2e.sh"
 echo "## Git"
 if [ -n "$(git status --porcelain)" ]; then
   echo "### git push"
-  git add pnpm-lock.yaml uv.lock
-  git diff --staged --quiet || git commit -m "chore(deps): Lock" -- pnpm-lock.yaml uv.lock
-
-  FILES="package.json frontend/package.json pyproject.toml backend/pyproject.toml uv.lock pnpm-workspace.yaml biome.json .pre-commit-config.yaml .nvmrc .python-version frontend/src/client"
+  FILES="pnpm-lock.yaml uv.lock package.json frontend/package.json pyproject.toml backend/pyproject.toml uv.lock pnpm-workspace.yaml biome.json .pre-commit-config.yaml .nvmrc .python-version frontend/src/client"
   # shellcheck disable=SC2086
   git add $FILES
   # shellcheck disable=SC2086
